@@ -105,6 +105,84 @@ TCanvas *Plot2D_my(TChain *data, TString branchname, TString binning,TString sel
   return c;
 }
 
+TCanvas *Plot2D_new(TChain *data, std::vector<TChain *> mc_vec, TString branchname, TString binning,
+		    TString category, TString selection,
+		    TString dataLabel, std::vector<TString> mcLabel_vec, TString xLabel, TString yLabel,
+		    bool logy=false, bool usePU=true, bool ratio=true,bool smear=false, bool scale=false, bool useR9Weight=false){
+  //use this for 2D distributions                                                                                                                            
+  TStopwatch watch;
+  watch.Start();
+
+  //type == 0: data only
+  //type == 1: MC only
+  //type == 2: data/MC
+   
+  int nHist= mc_vec.size();
+  if(nHist>4) return NULL;
+
+  TCanvas *c = new TCanvas();
+  c->SetRightMargin(0.2);
+
+  if(branchname=="map"){//this is Barrel only
+    branchname="seedXSCEle:seedYSCEle";
+    //binning="(360,1,361,171,-85,86)"; //EB
+    binning="(360,1,361,200,0,200)"; //EE
+    yLabel="iEta";
+    xLabel="iPhi";
+    c->SetGridx();
+  }
+  TString branchNameData=branchname;
+  TString branchNameMC=branchname;
+
+  ElectronCategory_class cutter;
+  TCut selection_data="";
+  if(category.Sizeof()>1) selection_data = cutter.GetCut(category, false,0);
+  selection_data+=selection;
+  TCut selection_MC="";
+  if(category.Sizeof()>1) selection_MC = cutter.GetCut(category, false,0);
+  selection_MC+=selection;
+
+  if(smear){
+    branchNameMC.ReplaceAll("invMass_SC_regrCorr_pho ","(invMass_SC_regrCorr_pho*sqrt(smearEle[0]*smearEle[1]))");
+    branchNameMC.ReplaceAll("energySCEle_regrCorr_pho ","(energySCEle_regrCorr_pho*smearEle) ");
+    branchNameMC.ReplaceAll("energySCEle_regrCorr_pho[0]","(energySCEle_regrCorr_pho[0]*smearEle[0])");
+    branchNameMC.ReplaceAll("energySCEle_regrCorr_pho[1]","(energySCEle_regrCorr_pho[1]*smearEle[1])");
+
+  }
+  if(scale){
+    branchNameData.ReplaceAll("invMass_SC_regrCorr_pho ","(invMass_SC_regrCorr_pho*sqrt(corrEle[0]*corrEle[1]))");
+    branchNameData.ReplaceAll("energySCEle_regrCorr_pho ","(energySCEle_regrCorr_pho*corrEle)");
+    branchNameData.ReplaceAll("energySCEle_regrCorr_pho[0]","(energySCEle_regrCorr_pho[0]*corrEle[0])");
+    branchNameData.ReplaceAll("energySCEle_regrCorr_pho[1]","(energySCEle_regrCorr_pho[1]*corrEle[1])");
+  }
+
+  //drawing histograms
+  data->Draw(branchNameData+">>data_hist"+binning,selection_data);
+  /*if(nHist > 0){
+    for(std::vector<TChain *>::const_iterator mc_itr = mc_vec.begin();
+	mc_itr != mc_vec.end();
+	mc_itr++){
+      TChain *mc = *mc_itr;
+      TString mcHistName; mcHistName+=mc_itr-mc_vec.begin(); mcHistName+="_hist";
+      TString weights="mcGenWeight";
+
+      if(usePU) weights+="*puWeight";
+      if(useR9Weight) weights+="*r9Weight";
+      mc->Draw(branchNameMC+">>"+mcHistName+binning, selection_MC *weights.Data());
+
+    }
+    }*/
+  
+  TH2F *d = (TH2F *) gROOT->FindObject("data_hist");
+  d->GetYaxis()->SetTitle(yLabel);
+  d->GetXaxis()->SetTitle(xLabel);
+  d->GetZaxis()->SetTitle("Events");
+  d->GetZaxis()->SetNdivisions(510);
+  d->Draw("colz");
+
+  return c;
+}
+
 TCanvas *PlotDataMC2D(TChain *data, TChain *mc, TString branchname, TString binning, 
 		      TCut selection, 
 		      TString dataLabel, TString mcLabel, 
@@ -114,6 +192,7 @@ TCanvas *PlotDataMC2D(TChain *data, TChain *mc, TString branchname, TString binn
   //type == 1: MC only
   //type == 2: data/MC
    
+  //must use this use for 2D
   TCanvas *c = new TCanvas("c","");
 
   if(branchname=="map"){
@@ -505,7 +584,7 @@ TCanvas *PlotDataMCMC(TChain *data, TChain *mc, TChain *mc2,
     //d_norm->GetYaxis()->SetRangeUser(0.1,max);
     s_norm->GetYaxis()->SetRangeUser(0.1,max);
     c->SetLogy();
-  } else {
+  } else{
     //d_norm->GetYaxis()->SetRangeUser(0,max);  
     s_norm->GetYaxis()->SetRangeUser(0,max);  
   }
@@ -549,9 +628,10 @@ TCanvas *PlotDataMCs(TChain *data, std::vector<TChain *> mc_vec, TString branchn
 		     TString category, TString selection, 
 		     TString dataLabel, std::vector<TString> mcLabel_vec, TString xLabel, TString yLabelUnit, 
 		     bool logy=false, bool usePU=true, bool ratio=true,bool smear=false, bool scale=false, bool useR9Weight=false){
+  //use this for 1D distributions 
   TStopwatch watch;
   watch.Start();
-  //gStyle->SetOptStat(11);//Giuseppe
+  //gStyle->SetOptStat(11);
 
   int nHist= mc_vec.size();
   int colors[4]={kRed,kGreen,kBlue,kCyan};
@@ -580,8 +660,7 @@ TCanvas *PlotDataMCs(TChain *data, std::vector<TChain *> mc_vec, TString branchn
   pad3->SetBottomMargin(0.4);
   pad3->SetRightMargin(0.1);
   pad3->Draw();
-  pad3->cd();
-    
+  pad3->cd();    
   pad1->cd();
 
   TString branchNameData=branchname;
@@ -623,7 +702,8 @@ TCanvas *PlotDataMCs(TChain *data, std::vector<TChain *> mc_vec, TString branchn
 
   
   // Draw histograms
-    data->Draw(branchNameData+">>data_hist"+binning, selection_data);
+  data->Draw(branchNameData+">>data_hist"+binning, selection_data);
+
     if(nHist > 0){
       for(std::vector<TChain *>::const_iterator mc_itr = mc_vec.begin();
 	  mc_itr != mc_vec.end();
@@ -641,6 +721,7 @@ TCanvas *PlotDataMCs(TChain *data, std::vector<TChain *> mc_vec, TString branchn
 // 	mc->SetBranchStatus("puWeight",1);
 
 	TString mcHistName; mcHistName+=mc_itr-mc_vec.begin(); mcHistName+="_hist";
+	//cout<<"mcHistName"<<mcHistName<<endl;
 	TString weights="mcGenWeight";
 	
 	if(usePU) weights+="*puWeight";
@@ -670,8 +751,9 @@ TCanvas *PlotDataMCs(TChain *data, std::vector<TChain *> mc_vec, TString branchn
     d=(TH1F *) gROOT->FindObject("0_hist");
     d->SetMarkerSize(0);
   }
-  //d->SaveAs("tmp/d_hist.root");
-  //s->SaveAs("tmp/s_hist.root");
+
+  //Saving histos
+  d->SaveAs("~/Gain_switch_work/tmp/d_histcheck.root");
 
   yLabel.Form("Events /(%.2f %s)", d->GetBinWidth(2), yLabelUnit.Data());
   
@@ -691,10 +773,14 @@ TCanvas *PlotDataMCs(TChain *data, std::vector<TChain *> mc_vec, TString branchn
       d->GetYaxis()->SetRangeUser(0,max);
   }
 
-  for(int i=0; i < nHist; i++){
+  cout<<"Picking MCs"<<endl;
+  for(int i=0; i < 1; i++){//nHist
     TString mcHistName; mcHistName+=i; mcHistName+="_hist";
     TH1F *s = (TH1F *) gROOT->FindObject(mcHistName);
+    //cout<<mcHistName<<endl;
     if(s==NULL) continue;
+    //Saving histos
+    s->SaveAs("~/Gain_switch_work/tmp/s_histcheck.root");
     std::cout << "nEvents signal: " << s->Integral() << "\t" << s->GetEntries() << std::endl;
     if(logy){
       s->GetYaxis()->SetRangeUser(0.1,max);
@@ -711,6 +797,7 @@ TCanvas *PlotDataMCs(TChain *data, std::vector<TChain *> mc_vec, TString branchn
     s->SetFillColor(colors[i]);
     s->SetLineColor(colors[i]);
     s->SetLineWidth(2);
+
 
     TH1F* s_norm = NULL;
     if(i==0) s_norm = (TH1F *) (s->DrawNormalized("hist", d->Integral()));
@@ -758,6 +845,9 @@ TCanvas *PlotDataMCs(TChain *data, std::vector<TChain *> mc_vec, TString branchn
 
   watch.Stop();
   watch.Print();
+
+  //d->Write();
+
   return c;
 
 }
