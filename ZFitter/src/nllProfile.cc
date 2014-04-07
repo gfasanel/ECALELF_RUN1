@@ -61,38 +61,179 @@ using namespace RooStats;
 
 //Make Histos
 void Make_Histos(TChain *data,TChain *mc){
+
+  //Settings                                                                  
+  /* TChain *data, std::vector<TChain *> mc_vec, TString branchname, TString \
+binning,                                                                        
+                     TString category, TString selection,                       
+      TString dataLabel, std::vector<TString> mcLabel_vec, TString xLabel, TStr\
+ing yLabelUnit,                                                                 
+      bool logy=false, bool usePU=true, bool ratio=true,bool smear=false, bool \
+scale=false, bool useR9Weight=false                                             
+  */
+  //Settings: common to all histograms                                        
+  TString binning;
+  TString category;
+  TString selection; //Se vuoi applicare tagli aggiuntivi                     
+  TString xLabel;
+  TString yLabelUnit;
+  bool logy=false; bool usePU=true; bool ratio=true;bool smear=false; bool scale=false; bool useR9Weight=false;
+
+  //Handle common cuts                                                        
+  /*
+  ElectronCategory_class cutter; //=> solve this point
+  TCut selection_data="";
+  if(category.Sizeof()>1) selection_data = cutter.GetCut(category, false,0);
+  //selection_data+=selection;                                                
+  TCut selection_MC="";
+  if(category.Sizeof()>1) selection_MC = cutter.GetCut(category, false,0);
+  selection_MC+=selection;                                                  
+  */
+
+  //Weight in filling histograms
+  double selection_data; //this must be handle in a similar way of GetCutter
+  double selection_MC;
+
+  //Declaration of variables
+  Long64_t        eventNumber;
+
   // for the energy calculation                                                                                                                          
-  Float_t         energyEle[2];
   Float_t         corrEle_[2]={1,1};
   Float_t         smearEle_[2]={1,1};
-  // for the angle calculation                                                                                                                           
-  Float_t         etaEle[2];
-  Float_t         phiEle[2];
-
   // for the weight calculation                                                                                                                          
-  Float_t         weight=1;
+  Float_t         weight=1;//pu weight
   Float_t         r9weight[2]={1,1};
   Float_t         ptweight[2]={1,1};
   Float_t         mcGenWeight=1;
-  Int_t           smearerCat[2];
+  Float_t         smearerCat[2];
 
-  Long64_t eventNumber;
-  //Long64_t entries = data->GetEntryList()->GetN(); //with this it doesn't work                                                                           
-  Long64_t entries = data->GetEntries();
+  // Stored variables
+  //
+  Float_t         energyEle[2];                                                                                                                           
+  Float_t         etaEle[2];	     
+  Float_t         phiEle[2];	     
+  Float_t         invMass;	     
+  Float_t         energySCEle[2];    
+  Float_t         pModeGsfEle[2];    
+  Float_t         etaSCEle[2];	     
+  Float_t         PtEle[2];	     
+  Float_t         seedEnergySCEle[2];
+  Float_t         chargeEle[2];	     
+  Float_t         R9Ele[2];	     
+  Float_t           seedXSCEle[2];     
+  Float_t           seedYSCEle[2];          
+
+  //Useful variabled
+  Int_t           eleID[2];
+  Bool_t          HLTfire;
+  Int_t           recoFlagsEle[2];
+
 
   data->SetBranchAddress("eventNumber", &eventNumber);
   data->SetBranchAddress("etaEle", etaEle);
   data->SetBranchAddress("phiEle", phiEle);
+  data->SetBranchAddress("invMass",&invMass);		  	     
+  data->SetBranchAddress("energySCEle",energySCEle);          		  	     
+  data->SetBranchAddress("pModeGsfEle",pModeGsfEle);     		 	     
+  data->SetBranchAddress("etaSCEle",etaSCEle);	   		  
+  data->SetBranchAddress("PtEle",PtEle);	   	  
+  data->SetBranchAddress("seedEnergySCEle",seedEnergySCEle); 		    
+  data->SetBranchAddress("chargeEle",chargeEle);	   		  
+  data->SetBranchAddress("R9Ele",R9Ele);	   	  
+  data->SetBranchAddress("seedXSCEle",seedXSCEle);      		    
+  data->SetBranchAddress("seedYSCEle",seedYSCEle);      		    
+  data->SetBranchAddress("eleID",eleID);      		    
+  data->SetBranchAddress("HLTfire",&HLTfire);      		    
+  data->SetBranchAddress("recoFlagsEle",recoFlagsEle);      		    				  				      
   //expections for null pointers                                                                                                                           
-
-  //Declaration of histograms                                                                                                                              
-  TH1D* EtaEleLead=new TH1D("EtaEleLead","EtaEleLead",1000,-5,5);
-  for(Long64_t jentry=0; jentry < entries; jentry++){
-    Long64_t entryNumber= data->GetEntryNumber(jentry);
-    data->GetEntry(entryNumber);
-    EtaEleLead->Fill(etaEle[0]);
+  if(data->GetBranch("scaleEle")!=NULL){
+      data->SetBranchAddress("scaleEle", corrEle_);
   }
-  EtaEleLead->SaveAs("tmp/test_histos.root");
+
+  if(data->GetBranch("smearEle")!=NULL){
+      data->SetBranchAddress("smearEle", smearEle_);
+  }
+
+  if(data->GetBranch("puWeight")!=NULL){
+    data->SetBranchAddress("puWeight", &weight);
+  }
+
+  if(data->GetBranch("r9Weight")!=NULL){
+    data->SetBranchAddress("r9Weight", r9weight);
+  }
+
+  if(data->GetBranch("ptWeight")!=NULL){
+    data->SetBranchAddress("ptWeight", ptweight);
+  }
+
+  if(data->GetBranch("mcGenWeight")!=NULL){
+    data->SetBranchAddress("mcGenWeight", &mcGenWeight);
+  }
+  if(data->GetBranch("smearerCat")!=NULL){
+    data->SetBranchAddress("smearerCat", smearerCat);
+  }
+
+  Long64_t entries = data->GetEntries();
+  //Declaration of histograms                                                                                                                              
+  TH1D* InvMass                        =new TH1D("InvMass","InvMass",10000,0,2000);  
+  TH1D* EneSCEleLead                   =new TH1D("EneSCEleLead","EneSCEleLead",10000,0,3000);
+  TH1D* EneSCEleSubLead                =new TH1D("EneSCEleSubLead","EneSCEleSubLead",10000,0,3000);
+  TH1D* MomentumLead                   =new TH1D("MomentumLead","MomentumLead",10000,0,3000);
+  TH1D* MomentumSubLead                =new TH1D("MomentumSubLead","MomentumSubLead",10000,0,3000);
+  TH1D* EoverPLead                     =new TH1D("EoverPLead","EoverPLead",100,0,1.5);
+  TH1D* EoverPSubLead                  =new TH1D("EoverPSubLead","EoverPSubLead",100,0,1.5);
+  TH1D* EtaEleLead                     =new TH1D("EtaEleLead","EtaEleLead",1000,-5,5);
+  TH1D* SeedXSCEle                     =new TH1D("SeedXSCEle","SeedXSCEle",1000,-200,200);
+  TH1D* SeedYSCEle                     =new TH1D("SeedYSCEle","SeedYSCEle",1000,0,360);
+  //2D histograms
+  TH2D* EneEleLeadvsEtaEleLead         =new TH2D("EneEleLeadvsEtaEleLead","EneEleLeadvsEtaEleLead",10,-2,2,70,130,200);  
+
+  //ECAL mapping
+  TH2D* MapEB                          =new TH2D("MapEB","MapEB",360,1,361,171,-85.5,85.5);  
+  TH2D* MapEE                          =new TH2D("MapEE","MapEE",105,1,105,200,-100.5,100.5);  
+
+  //Loop filling histograms
+  //"eleID_loose-trigger-noPF"
+  for(Long64_t jentry=0; jentry < entries; jentry++){
+    //for(Long64_t jentry=0; jentry < 100; jentry++){//check
+    Long64_t entryNumber= data->GetEntryNumber(jentry);
+
+    selection_data=((eleID[0] & 2)==2)*((eleID[1] & 2)==2)*((int)HLTfire==1)*(recoFlagsEle[0]>1)*(recoFlagsEle[1]>1);
+
+    data->GetEntry(entryNumber);
+    InvMass                        ->Fill(invMass,selection_data);
+    EneSCEleLead                   ->Fill(energySCEle[0],selection_data);
+    EneSCEleSubLead                ->Fill(energySCEle[1],selection_data);
+    MomentumLead                   ->Fill(pModeGsfEle[0],selection_data);
+    MomentumSubLead                ->Fill(pModeGsfEle[1],selection_data);
+    EoverPLead                     ->Fill(energySCEle[0]/pModeGsfEle[0],selection_data);  
+    EoverPSubLead                  ->Fill(energySCEle[1]/pModeGsfEle[1],selection_data);  
+    EtaEleLead                     ->Fill(etaEle[0],selection_data);
+    SeedXSCEle                     ->Fill(seedXSCEle[0],selection_data);//*fabs(etaSCEle[0])<1.4442
+    SeedYSCEle                     ->Fill(seedYSCEle[0],selection_data);//*fabs(etaSCEle[0])<1.4442
+    EneEleLeadvsEtaEleLead         ->Fill(etaEle[0],energySCEle[0],selection_data);
+    MapEB                          ->Fill(seedYSCEle[0],seedXSCEle[0],selection_data*fabs(etaSCEle[0])<1.4442);
+    MapEE                          ->Fill(seedYSCEle[0],seedXSCEle[0]*(etaSCEle[0]/fabs(etaSCEle[0])),selection_data*fabs(etaSCEle[0])>1.4442);
+
+  }
+
+  TFile* histograms=new TFile("tmp/histograms.root","RECREATE");
+  InvMass            ->Write();
+  EneSCEleLead       ->Write();
+  EneSCEleSubLead    ->Write();
+  MomentumLead       ->Write();
+  MomentumSubLead    ->Write();
+  EoverPLead         ->Write();
+  EoverPSubLead      ->Write();
+  EtaEleLead         ->Write();
+  SeedXSCEle         ->Write();
+  SeedYSCEle         ->Write();
+  EneEleLeadvsEtaEleLead->Write();
+
+  MapEB->Write();
+  MapEE->Write();
+
+  histograms->Close();
 
 }
 

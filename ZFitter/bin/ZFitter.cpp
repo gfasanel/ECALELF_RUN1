@@ -981,48 +981,12 @@ int main(int argc, char **argv) {
   //Chain taken: now you can loop over the ntuples
 
   if(vm.count("doHistos")){
-    //just do the histos and exit, do not go further on
     //Example in SmearingImporter.cc
     //looping over ntuples:
     Make_Histos(data,mc); //implemented in src/nllProfile.cc
-    /*
-      // for the energy calculation
-      Float_t         energyEle[2];
-      Float_t         corrEle_[2]={1,1};
-      Float_t         smearEle_[2]={1,1};
-      // for the angle calculation 
-      Float_t         etaEle[2];
-      Float_t         phiEle[2];
-
-      // for the weight calculation
-      Float_t         weight=1;
-      Float_t         r9weight[2]={1,1};
-      Float_t         ptweight[2]={1,1};
-      Float_t         mcGenWeight=1;
-      Int_t           smearerCat[2];
-
-    Long64_t eventNumber;
-    //Long64_t entries = data->GetEntryList()->GetN(); //with this it doesn't work
-    Long64_t entries = data->GetEntries();
-    
-    data->SetBranchAddress("eventNumber", &eventNumber);
-    data->SetBranchAddress("etaEle", etaEle);
-    data->SetBranchAddress("phiEle", phiEle);
-    //expections for null pointers
-    
-    //Declaration of histograms
-    TH1D* EtaEleLead=new TH1D("EtaEleLead","EtaEleLead",1000,-5,5);
-
-    for(Long64_t jentry=0; jentry < entries; jentry++){
-      Long64_t entryNumber= data->GetEntryNumber(jentry);
-      data->GetEntry(entryNumber);
-      
-      EtaEleLead->Fill(etaEle[0]);
-      }
-      EtaEleLead->SaveAs("tmp/test_histos.root");*/
-
-       exit(0);
-     }
+    exit(0);    
+    //just do the histos and exit, do not go further on
+  }
 
   ZFit_class fitter( data, mc, NULL, 
 		     invMass_var.c_str(), invMass_min, invMass_max, invMass_binWidth); 
