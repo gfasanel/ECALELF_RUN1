@@ -281,6 +281,7 @@ int main(int argc, char **argv) {
     ("useFSRweight", "activate the FSR weight in MC")
     ("useWEAKweight", "activate the WEAK interference weight in MC")
     ("saveRootMacro","")
+    ("doHistos","")
     //
     ("selection", po::value<string>(&selection)->default_value("loose"),"")
     ("commonCut", po::value<string>(&commonCut)->default_value("Et_25-trigger-noPF"),"")
@@ -470,7 +471,8 @@ int main(int argc, char **argv) {
      && !vm.count("savePUTreeWeight") 
      && !vm.count("saveCorrEleTree") 
      && !vm.count("saveR9TreeWeight") 
-     && !vm.count("saveRootMacro") 
+     && !vm.count("saveRootMacro")
+     && !vm.count("doHistos")
      ) return 1;
 
   if(!dataPUFileName.empty()) dataPUFileNameVec.push_back(dataPUFileName.c_str());
@@ -936,7 +938,7 @@ int main(int argc, char **argv) {
      || vm.count("savePUTreeWeight")
      || vm.count("runDivide") 
      || vm.count("saveCorrEleTree") 
-     || vm.count("saveR9TreeWeight") 
+     || vm.count("saveR9TreeWeight")
      ) return 0;
 
   eleID+=selection.c_str();
@@ -1071,10 +1073,21 @@ int main(int argc, char **argv) {
   //------------------------------ ZFit_class declare and set the options
   TChain *data = NULL;
   TChain *mc = NULL;
+
   if(!vm.count("smearerFit")){
     data= (tagChainMap["d"])["selected"];
     mc  = (tagChainMap["s"])["selected"];
   }
+  //Chain taken: now you can loop over the ntuples
+
+  if(vm.count("doHistos")){
+    //looping over ntuples:
+    Make_Histos(data,"histograms_data.root","region"); //implemented in src/nllProfile.cc
+    Make_Histos(mc,"histograms_mc.root","region"); 
+    exit(0);    
+    //just do the histos and exit, do not go further on
+  }
+
   ZFit_class fitter( data, mc, NULL, 
 		     invMass_var.c_str(), invMass_min, invMass_max, invMass_binWidth); 
 
