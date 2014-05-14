@@ -63,17 +63,15 @@
 using namespace RooStats;
 
 //Make Histos
-void Make_Histos(TChain *data, string output, string option){//chain,.root,barrel/endcap
-  //cahnde
-  //data can be either data or MC ntuples
+void Make_Histos(TChain *chain, string output, string region){//chain,.root,barrel/endcap
+  //chain can be either data or MC ntuples
 
   cout<<"********************"<<endl;
-  cout<<"output: tmp/"<<output<<endl;
+  cout<<"output: tmp/"<<output+"_"+region<<endl;
 
 
   //Weight in filling histograms
-  double selection_data; //this must be handle in a similar way of GetCutter
-  double selection_MC;
+  double selection;
 
   //Declaration of variables
   Long64_t        eventNumber;		 
@@ -130,91 +128,154 @@ void Make_Histos(TChain *data, string output, string option){//chain,.root,barre
   TBranch *b_recoFlagsEle;               
 
 
-  data->SetBranchAddress("eventNumber", &eventNumber,&b_eventNumber);
-  data->SetBranchAddress("etaEle", etaEle,&b_etaEle);
-  data->SetBranchAddress("etaSCEle", etaSCEle,&b_etaSCEle);
-  data->SetBranchAddress("phiEle", phiEle,&b_phiEle);
-  data->SetBranchAddress("invMass",&invMass,&b_invMass);		
-  data->SetBranchAddress("energySCEle",energySCEle,&b_energySCEle);
-  data->SetBranchAddress("pModeGsfEle",pModeGsfEle,&b_pModeGsfEle);
-  data->SetBranchAddress("PtEle",PtEle,&b_PtEle);	   	  
-  data->SetBranchAddress("seedEnergySCEle",seedEnergySCEle,&b_seedEnergySCEle); 		    
-  data->SetBranchAddress("chargeEle",chargeEle,&b_chargeEle);	   		  
-  data->SetBranchAddress("R9Ele",R9Ele,&b_R9Ele);	   	  
-  data->SetBranchAddress("seedXSCEle",seedXSCEle,&b_seedXSCEle);      		    
-  data->SetBranchAddress("seedYSCEle",seedYSCEle,&b_seedYSCEle);      		    
-  data->SetBranchAddress("eleID",eleID,&b_eleID);      		    
-  data->SetBranchAddress("HLTfire",&HLTfire,&b_HLTfire);      		    
-  data->SetBranchAddress("recoFlagsEle",recoFlagsEle,&b_recoFlagsEle);
-  //data->SetBranchAddress("energyEle",energyEle,&b_energyEle);  	     
+  chain->SetBranchAddress("eventNumber", &eventNumber,&b_eventNumber);
+  chain->SetBranchAddress("etaEle", etaEle,&b_etaEle);
+  chain->SetBranchAddress("etaSCEle", etaSCEle,&b_etaSCEle);
+  chain->SetBranchAddress("phiEle", phiEle,&b_phiEle);
+  chain->SetBranchAddress("invMass",&invMass,&b_invMass);		
+  chain->SetBranchAddress("energySCEle",energySCEle,&b_energySCEle);
+  chain->SetBranchAddress("pModeGsfEle",pModeGsfEle,&b_pModeGsfEle);
+  chain->SetBranchAddress("PtEle",PtEle,&b_PtEle);	   	  
+  chain->SetBranchAddress("seedEnergySCEle",seedEnergySCEle,&b_seedEnergySCEle); 		    
+  chain->SetBranchAddress("chargeEle",chargeEle,&b_chargeEle);	   		  
+  chain->SetBranchAddress("R9Ele",R9Ele,&b_R9Ele);	   	  
+  chain->SetBranchAddress("seedXSCEle",seedXSCEle,&b_seedXSCEle);      		    
+  chain->SetBranchAddress("seedYSCEle",seedYSCEle,&b_seedYSCEle);      		    
+  chain->SetBranchAddress("eleID",eleID,&b_eleID);      		    
+  chain->SetBranchAddress("HLTfire",&HLTfire,&b_HLTfire);      		    
+  chain->SetBranchAddress("recoFlagsEle",recoFlagsEle,&b_recoFlagsEle);
+  //chain->SetBranchAddress("energyEle",energyEle,&b_energyEle);  	     
 
-  //expections for null pointers
-  if(data->GetBranch("scaleEle")!=NULL){
-    TBranch *b_scaleEle;
-    data->SetBranchAddress("scaleEle", corrEle_,&b_scaleEle);
+  //expections for null pointers => poi GetEntry non funziona se non fai cosi..quindi, non serve a niente
+  //Data:
+  TBranch *b_scaleEle;
+  if(chain->GetBranch("scaleEle")!=NULL){
+    chain->SetBranchAddress("scaleEle", corrEle_,&b_scaleEle);
   }
-  if(data->GetBranch("smearEle")!=NULL){
-    TBranch *b_smearEle;
-    data->SetBranchAddress("smearEle", smearEle_,&b_smearEle);
+  TBranch *b_smearEle;
+  if(chain->GetBranch("smearEle")!=NULL){
+    chain->SetBranchAddress("smearEle", smearEle_,&b_smearEle);
   }
-  if(data->GetBranch("puWeight")!=NULL){
-    TBranch *b_puWeight;
-    data->SetBranchAddress("puWeight", &weight,&b_puWeight);
+  TBranch *b_puWeight;
+  if(chain->GetBranch("puWeight")!=NULL){
+    chain->SetBranchAddress("puWeight", &weight,&b_puWeight);
   }
-  if(data->GetBranch("r9Weight")!=NULL){
+
+  if(chain->GetBranch("r9Weight")!=NULL){
     TBranch *b_r9Weight;
-    data->SetBranchAddress("r9Weight", r9weight,&b_r9Weight);
+    chain->SetBranchAddress("r9Weight", r9weight,&b_r9Weight);
   }
-  if(data->GetBranch("ptWeight")!=NULL){
+  if(chain->GetBranch("ptWeight")!=NULL){
     TBranch *b_ptWeight;
-    data->SetBranchAddress("ptWeight", ptweight,&b_ptWeight);
+    chain->SetBranchAddress("ptWeight", ptweight,&b_ptWeight);
   }
-  if(data->GetBranch("mcGenWeight")!=NULL){
+  if(chain->GetBranch("mcGenWeight")!=NULL){
     TBranch *b_mcGenWeight;
-    data->SetBranchAddress("mcGenWeight", &mcGenWeight,&b_mcGenWeight);
+    chain->SetBranchAddress("mcGenWeight", &mcGenWeight,&b_mcGenWeight);
   }
-  if(data->GetBranch("smearerCat")!=NULL){
+  if(chain->GetBranch("smearerCat")!=NULL){
     TBranch *b_smearerCat;
-    data->SetBranchAddress("smearerCat", smearerCat,&b_smearerCat);
+    chain->SetBranchAddress("smearerCat", smearerCat,&b_smearerCat);
   }
 
-  Long64_t entries = data->GetEntries(); //Number of entries
+  Long64_t entries = chain->GetEntries(); //Number of entries
   //Declaration of histograms             
-  //Quelli in eta falli grandi cosi usi gli stessi per barrel e endcap
   //TH1D* InvMass                        =new TH1D("InvMass","InvMass",10000,0,2000);  
   TH1D* InvMass                        =new TH1D("InvMass","InvMass",100,30,200);  
+  TH1D* EneSeed                        =new TH1D("EneSeed","EneSeed",10000,0,3000);
   TH1D* EneSCEleLead                   =new TH1D("EneSCEleLead","EneSCEleLead",10000,0,3000);
   TH1D* EneSCEleSubLead                =new TH1D("EneSCEleSubLead","EneSCEleSubLead",10000,0,3000);
+  TH1D* EneSCEle                       =new TH1D("EneSCEle","EneSCEle",10000,0,3000);
+
   TH1D* MomentumLead                   =new TH1D("MomentumLead","MomentumLead",10000,0,3000);
   TH1D* MomentumSubLead                =new TH1D("MomentumSubLead","MomentumSubLead",10000,0,3000);
+  TH1D* Momentum                       =new TH1D("Momentum","Momentum",10000,0,3000);
+
   TH1D* EoverPLead                     =new TH1D("EoverPLead","EoverPLead",100,0,1.5);
   TH1D* EoverPSubLead                  =new TH1D("EoverPSubLead","EoverPSubLead",100,0,1.5);
+  TH1D* EoverP                         =new TH1D("EoverP","EoverP",100,0,2);
+
   TH1D* EtaEleLead                     =new TH1D("EtaEleLead","EtaEleLead",1000,-5,5);
   TH1D* SeedXSCEle                     =new TH1D("SeedXSCEle","SeedXSCEle",1000,-200,200);
   TH1D* SeedYSCEle                     =new TH1D("SeedYSCEle","SeedYSCEle",1000,0,360);
+					       
+  //2D histograms		       
+  TH2D* EneEleLeadvsEtaEleLead         =new TH2D("EneEleLeadvsEtaEleLead","EneEleLeadvsEtaEleLead",100,-5,5,1000,0,2000);  
+  TH2D* EneElevsEtaEle                 =new TH2D("EneElevsEtaEle","EneElevsEtaEle",100,-5,5,1000,0,2000);  
 
-  //2D histograms
-  TH2D* EneEleLeadvsEtaEleLead         =new TH2D("EneEleLeadvsEtaEleLead","EneEleLeadvsEtaEleLead",100,-5,5,1000,40,2000);  
-  TH2D* EneEleLeadvsR9EleLead          =new TH2D("EneEleLeadvsR9EleLead","EneEleLeadvsR9EleLead",100,0,10,1000,40,2000);  
-  TH2D* EneEleSubLeadvsEtaEleSubLead   =new TH2D("EneEleSubLeadvsEtaEleSubLead","EneEleSubLeadvsEtaEleSubLead",100,-5,5,1000,40,2000);  
-  TH2D* EneEleSubLeadvsR9EleSubLead    =new TH2D("EneEleSubLeadvsR9EleSubLead","EneEleSubLeadvsR9EleSubLead",100,0,10,1000,40,2000);  
-  TH2D* PEleLeadvsEtaEleLead           =new TH2D("PEleLeadvsEtaEleLead","PEleLeadvsEtaEleLead",100,-5,5,1000,40,2000);  
-  TH2D* PEleLeadvsR9EleLead            =new TH2D("PEleLeadvsR9EleLead","PEleLeadvsR9EleLead",100,0,10,1000,40,2000);  
-  TH2D* PEleSubLeadvsEtaEleSubLead     =new TH2D("PEleSubLeadvsEtaEleSubLead","PEleSubLeadvsEtaEleSubLead",100,-5,5,1000,40,2000);  
-  TH2D* PEleSubLeadvsR9EleSubLead      =new TH2D("PEleSubLeadvsR9EleSubLead","PEleSubLeadvsR9EleSubLead",100,0,10,1000,40,2000);  
-
-  //ECAL mapping
+  TH2D* EneEleLeadvsR9EleLead          =new TH2D("EneEleLeadvsR9EleLead","EneEleLeadvsR9EleLead",100,0,10,1000,0,2000);  
+  TH2D* EneElevsR9Ele                  =new TH2D("EneElevsR9Ele","EneElevsR9Ele",100,0,10,1000,0,2000);  
+  TH2D* EneEleSubLeadvsEtaEleSubLead   =new TH2D("EneEleSubLeadvsEtaEleSubLead","EneEleSubLeadvsEtaEleSubLead",100,-5,5,1000,0,2000);  
+  TH2D* EneEleSubLeadvsR9EleSubLead    =new TH2D("EneEleSubLeadvsR9EleSubLead","EneEleSubLeadvsR9EleSubLead",100,0,10,1000,0,2000);  
+  TH2D* PEleLeadvsEtaEleLead           =new TH2D("PEleLeadvsEtaEleLead","PEleLeadvsEtaEleLead",100,-5,5,1000,0,2000);  
+  TH2D* PElevsEtaEle                   =new TH2D("PElevsEtaEle","PElevsEtaEle",100,-5,5,1000,0,2000);  
+  TH2D* PEleLeadvsR9EleLead            =new TH2D("PEleLeadvsR9EleLead","PEleLeadvsR9EleLead",100,0,10,1000,0,2000);  
+  TH2D* PElevsR9Ele                    =new TH2D("PElevsR9Ele","PElevsR9Ele",100,0,10,1000,0,2000);  
+  TH2D* PEleSubLeadvsEtaEleSubLead     =new TH2D("PEleSubLeadvsEtaEleSubLead","PEleSubLeadvsEtaEleSubLead",100,-5,5,1000,0,2000);  
+  TH2D* PEleSubLeadvsR9EleSubLead      =new TH2D("PEleSubLeadvsR9EleSubLead","PEleSubLeadvsR9EleSubLead",100,0,10,1000,0,2000);  
+					       
+  //ECAL mapping		       
   TH2D* MapEBLead                      =new TH2D("MapEBLead","MapEBLead",360,1,361,171,-85,86);  
   TH2D* MapEELead                      =new TH2D("MapEELead","MapEELead",105,1,105,200,-100.5,100.5);  
   TH2D* MapEBSubLead                   =new TH2D("MapEBSubLead","MapEBSubLead",360,1,361,170,-85.5,85.5);  
-  TH2D* MapEESubLead                   =new TH2D("MapEESubLead","MapEESubLead",105,1,105,200,-100.5,100.5);  
-
-  //momentum mapping
-  TH2D* MapEBPLead                     =new TH2D("MapEBPLead","MapEBPLead",360,1,361,170,-85.5,85.5);  
+  TH2D* MapEESubLead                   =new TH2D("MapEESubLead","MapEESubLead",105,1,105,200,-100.5,100.5);
+  TH2D* MapEB                          =new TH2D("MapEB","MapEB",360,1,361,171,-85,86);  
+  TH2D* MapEE                          =new TH2D("MapEE","MapEE",105,1,105,200,-100.5,100.5);    
+					       
+  //momentum mapping		       
+  TH2D* MapEBPLead                     =new TH2D("MapEBPLead","MapEBPLead",360,1,361,171,-85,86);  
   TH2D* MapEEPLead                     =new TH2D("MapEEPLead","MapEEPLead",105,1,105,200,-100.5,100.5);  
-  TH2D* MapEBPSubLead                  =new TH2D("MapEBPSubLead","MapEBPSubLead",360,1,361,170,-85.5,85.5);  
+  TH2D* MapEBPSubLead                  =new TH2D("MapEBPSubLead","MapEBPSubLead",360,1,361,171,-85,86);  
   TH2D* MapEEPSubLead                  =new TH2D("MapEEPSubLead","MapEEPSubLead",105,1,105,200,-100.5,100.5);  
-  
+  TH2D* MapEBP                         =new TH2D("MapEBP","MapEBP",360,1,361,171,-85,86);  
+  TH2D* MapEEP                         =new TH2D("MapEEP","MapEEP",105,1,105,200,-100.5,100.5);  
+
+  //SumW2
+  InvMass                        ->Sumw2();
+  EneSCEleLead                   ->Sumw2();
+  EneSCEleSubLead                ->Sumw2();
+  MomentumLead                   ->Sumw2();
+  MomentumSubLead                ->Sumw2();
+  EoverPLead                     ->Sumw2();
+  EoverPSubLead                  ->Sumw2();
+  EtaEleLead                     ->Sumw2();
+  SeedXSCEle                     ->Sumw2();
+  SeedYSCEle                     ->Sumw2();
+				       
+  EneEleLeadvsEtaEleLead         ->Sumw2();
+  EneEleLeadvsR9EleLead          ->Sumw2();
+  EneEleSubLeadvsEtaEleSubLead   ->Sumw2();
+  EneEleSubLeadvsR9EleSubLead    ->Sumw2();
+  PEleLeadvsEtaEleLead           ->Sumw2();
+  PEleLeadvsR9EleLead            ->Sumw2();
+  PEleSubLeadvsEtaEleSubLead     ->Sumw2();
+  PEleSubLeadvsR9EleSubLead      ->Sumw2();
+				       
+  MapEBLead                      ->Sumw2();
+  MapEELead                      ->Sumw2();
+  MapEBSubLead                   ->Sumw2();
+  MapEESubLead                   ->Sumw2();
+				      
+  MapEBPLead                     ->Sumw2();
+  MapEEPLead                     ->Sumw2();
+  MapEBPSubLead                  ->Sumw2();
+  MapEEPSubLead                  ->Sumw2();
+
+  //Both electrons
+  EneSeed                        -> Sumw2(); 
+  EneSCEle                       -> Sumw2();
+  EoverP                         -> Sumw2();
+  Momentum                       -> Sumw2();
+  EneElevsEtaEle                 -> Sumw2();
+  EneElevsR9Ele                  -> Sumw2();
+  PElevsEtaEle                   -> Sumw2();
+  PElevsR9Ele                    -> Sumw2();
+  MapEB                          -> Sumw2();
+  MapEE                          -> Sumw2();
+  MapEBP                         -> Sumw2();
+  MapEEP                         -> Sumw2();
+
+
   //Loop filling histograms
   //"eleID_loose-trigger-noPF"
   //ElectronCategory_class cutter;
@@ -223,16 +284,16 @@ void Make_Histos(TChain *data, string output, string option){//chain,.root,barre
   //Sel = cutter.GetCut("eleID_loose-trigger-noPF", false,0,false);
   
 
-  for(Long64_t jentry=0; jentry < entries; jentry++){
-  //for(Long64_t jentry=0; jentry < 20; jentry++){//check
-    Long64_t entryNumber= data->GetEntryNumber(jentry);
+  //for(Long64_t jentry=0; jentry < entries; jentry++){
+  for(Long64_t jentry=0; jentry < 20; jentry++){//check
+    Long64_t entryNumber= chain->GetEntryNumber(jentry);
     if(!(jentry%2000000)){
       cout<<"Processing "<<jentry<<"/"<<entries<<endl;
     }
 
-    Long64_t ientry =data->LoadTree(jentry);
+    Long64_t ientry =chain->LoadTree(jentry);
     if (ientry < 0) break;
-    //data->GetEntry(entryNumber); //cosi funziona sicuramente
+    //chain->GetEntry(entryNumber); //Works but very slow
 
     b_eventNumber->GetEntry(ientry);		  	  
     b_etaEle->GetEntry(ientry);	     	  
@@ -250,12 +311,22 @@ void Make_Histos(TChain *data, string output, string option){//chain,.root,barre
     b_eleID->GetEntry(ientry);		  
     b_HLTfire->GetEntry(ientry);		  
     b_recoFlagsEle->GetEntry(ientry);
-    //b_energyEle->GetEntry(ientry);//NO		  
-    //b_r9Weight->GetEntry(ientry);//potrebbe non esistere	 	  
+   
+    //Corrections:
+
+    if(chain->GetBranch("scaleEle")!=NULL){
+      b_scaleEle->GetEntry(ientry);//->SegFault
+    }
+    if(chain->GetBranch("smearEle")!=NULL){
+      b_smearEle->GetEntry(ientry);//->SegFault
+    }
+    if(chain->GetBranch("puWeight")!=NULL){
+      b_puWeight->GetEntry(ientry);
+    }
+    //b_r9Weight->GetEntry(ientry);//	 	  
     //b_ptWeight->GetEntry(ientry);//potrebbe non esistere	 	  
-    //b_mcGenWeight->GetEntry(ientry);//potrebbe non esistere	  
-    //b_smearerCat->GetEntry(ientry);//potrebbe non esistere
-    //b_smearEle->GetEntry(ientry);//potrebbe non esistere	  
+    //b_mcGenWeight->GetEntry(ientry);//	  
+    //b_smearerCat->GetEntry(ientry);//
 
 
     //cout<<"Massa inv "<<invMass<<endl;
@@ -265,29 +336,78 @@ void Make_Histos(TChain *data, string output, string option){//chain,.root,barre
     //double value = strtod(Sel.GetTitle(), &endptr);
 
 
-    //To handle better
-    selection_data=1;
-    //selection_data=(((((eleID[0] & 2)==2)*((eleID[1] & 2)==2))*((abs(etaEle[0]) < 1.4442)*(abs(etaEle[1]) < 1.4442)))*(HLTfire==1))*((recoFlagsEle[0] > 1)*(recoFlagsEle[1] > 1));
+    //selection=1; //No selection, just for check
+
+    selection=(((((eleID[0] & 2)==2)*((eleID[1] & 2)==2)))*(HLTfire==1))*((recoFlagsEle[0] > 1)*(recoFlagsEle[1] > 1));
+
+    if(region=="barrel"){
+      selection*=(abs(etaEle[0]) < 1.4442)*(abs(etaEle[1]) < 1.4442);
+    }else if(region=="endcap"){
+      selection*=(abs(etaEle[0]) > 1.479)*(abs(etaEle[0]) <  2.6)*(abs(etaEle[1]) > 1.479)*(abs(etaEle[1]) <  2.6);
+    }
+    /*
+//create histograms
+ TObjArray HList(0);//fuori dal loop
+ 
+  for (loop over events, elements, tracks, hits)
+    {
+      TString histoname =
+        TString::Format("h_element_%d", (*elementId).at(trackIt).at(hitIt));
+     
+      TH1F *myhist = ((TH1F *)(HList.FindObject(histoname)));
+      if (!myhist)
+        {
+          myhist = new TH1F(histoname,
+                            "Response time;t[ns];Number of hits",
+                            300, 0., 30.);
+          HList.Add(myhist);
+        } // if (!myhist) ...
+     
+      myhist->Fill(time, 1.);
+    } // for (loop over events, elements, tracks, hits) ...
+ 
+  HList.Write();
+    */
     
-    InvMass                        ->Fill(invMass,selection_data);
-    EneSCEleLead                   ->Fill(energySCEle[0],selection_data);
-    EneSCEleSubLead                ->Fill(energySCEle[1],selection_data);
-    MomentumLead                   ->Fill(pModeGsfEle[0],selection_data);
-    MomentumSubLead                ->Fill(pModeGsfEle[1],selection_data);
-    EoverPLead                     ->Fill(energySCEle[0]/pModeGsfEle[0],selection_data);  
-    EoverPSubLead                  ->Fill(energySCEle[1]/pModeGsfEle[1],selection_data);  
-    EtaEleLead                     ->Fill(etaEle[0],selection_data);
-    SeedXSCEle                     ->Fill(seedXSCEle[0],selection_data);//*fabs(etaSCEle[0])<1.4442
-    SeedYSCEle                     ->Fill(seedYSCEle[0],selection_data);//*fabs(etaSCEle[0])<1.4442
-    EneEleLeadvsEtaEleLead         ->Fill(etaEle[0],energySCEle[0],selection_data);
-    MapEBLead                      ->Fill(seedYSCEle[0],seedXSCEle[0],selection_data);//this
-    MapEELead                      ->Fill(seedYSCEle[0],seedXSCEle[0]*(etaSCEle[0]/fabs(etaSCEle[0])),selection_data*(fabs(etaSCEle[0])>1.48)*(fabs(etaSCEle[0])<2.6));
-    MapEBPLead                     ->Fill(seedYSCEle[0],seedXSCEle[0],selection_data*fabs(etaSCEle[0])<1.479*pModeGsfEle[0]);
-    MapEEPLead                     ->Fill(seedYSCEle[0],seedXSCEle[0]*(etaSCEle[0]/fabs(etaSCEle[0])),selection_data*(fabs(etaSCEle[0])>1.48)*(fabs(etaSCEle[0])<2.6)*pModeGsfEle[0]);
+    InvMass                        ->Fill(invMass*sqrt(smearEle_[0]*smearEle_[1])*sqrt(corrEle_[0]*corrEle_[1]),selection);//Tes
+    cout<<"smearEle_[0] "<<smearEle_[0]<<endl;
+    cout<<"smearEle_[1] "<<smearEle_[1]<<endl;
+    cout<<"corrEle_[0] "<<corrEle_[0]<<endl;
+    cout<<"corrEle_[1] "<<corrEle_[1]<<endl;
+
+    //InvMass                        ->Fill(invMass,selection);
+    EneSCEleLead                   ->Fill(energySCEle[0],selection);
+    EneSCEleSubLead                ->Fill(energySCEle[1],selection);
+    MomentumLead                   ->Fill(pModeGsfEle[0],selection);
+    MomentumSubLead                ->Fill(pModeGsfEle[1],selection);
+    EoverPLead                     ->Fill(energySCEle[0]/pModeGsfEle[0],selection);  
+    EoverPSubLead                  ->Fill(energySCEle[1]/pModeGsfEle[1],selection);  
+    EtaEleLead                     ->Fill(etaEle[0],selection);
+    SeedXSCEle                     ->Fill(seedXSCEle[0],selection);
+    SeedYSCEle                     ->Fill(seedYSCEle[0],selection);
+    EneEleLeadvsEtaEleLead         ->Fill(etaEle[0],energySCEle[0],selection);
+    MapEBLead                      ->Fill(seedYSCEle[0],seedXSCEle[0],selection);
+    MapEELead                      ->Fill(seedYSCEle[0],seedXSCEle[0]*(etaSCEle[0]/fabs(etaSCEle[0])),selection*(fabs(etaSCEle[0])>1.48)*(fabs(etaSCEle[0])<2.6));
+    MapEBPLead                     ->Fill(seedYSCEle[0],seedXSCEle[0],selection*fabs(etaSCEle[0])<1.479*pModeGsfEle[0]);
+    MapEEPLead                     ->Fill(seedYSCEle[0],seedXSCEle[0]*(etaSCEle[0]/fabs(etaSCEle[0])),selection*(fabs(etaSCEle[0])>1.48)*(fabs(etaSCEle[0])<2.6)*pModeGsfEle[0]);
     
+
+    for(int i=0;i<2;i++){//difference between double and single electron
+    EneSeed                    ->Fill(seedEnergySCEle[i],selection);
+    EneSCEle                   ->Fill(energySCEle[i],selection);
+    Momentum                   ->Fill(pModeGsfEle[i],selection);
+    EoverP                     ->Fill(energySCEle[i]/pModeGsfEle[i],selection);  
+    EneElevsEtaEle             ->Fill(etaEle[i],energySCEle[i],selection);
+    MapEB                      ->Fill(seedYSCEle[i],seedXSCEle[i],selection);
+    MapEE                      ->Fill(seedYSCEle[i],seedXSCEle[i]*(etaSCEle[i]/fabs(etaSCEle[i])),selection*(fabs(etaSCEle[i])>1.48)*(fabs(etaSCEle[i])<2.6));
+    MapEBP                     ->Fill(seedYSCEle[i],seedXSCEle[i],selection*fabs(etaSCEle[i])<1.479*pModeGsfEle[i]);
+    MapEEP                     ->Fill(seedYSCEle[i],seedXSCEle[i]*(etaSCEle[i]/fabs(etaSCEle[i])),selection*(fabs(etaSCEle[i])>1.48)*(fabs(etaSCEle[i])<2.6)*pModeGsfEle[i]);
+    }
+    
+
   }
 
-  TFile* histograms=new TFile(("tmp/"+output).c_str(),"RECREATE");
+  TFile* histograms=new TFile(("tmp/"+output+"_"+region+".root").c_str(),"RECREATE");
   InvMass            ->Write();
   EneSCEleLead       ->Write();
   EneSCEleSubLead    ->Write();
@@ -304,6 +424,19 @@ void Make_Histos(TChain *data, string output, string option){//chain,.root,barre
   MapEELead->Write();
   MapEBPLead->Write();
   MapEEPLead->Write();
+
+  EneSeed                        ->Write();
+  EneSCEle                       -> Write();
+  EoverP                         -> Write();
+  Momentum                       -> Write();
+  EneElevsEtaEle                 -> Write();
+  //EneElevsR9Ele                  -> Write();
+  //PElevsEtaEle                   -> Write();
+  //PElevsR9Ele                    -> Write();
+  MapEB                          -> Write();
+  MapEE                          -> Write();
+  MapEBP                         -> Write();
+  MapEEP                         -> Write();
 
   histograms->Close();
 
