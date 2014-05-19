@@ -1083,11 +1083,11 @@ int main(int argc, char **argv) {
   if(vm.count("doHistos")){
     //looping over ntuples:
     //
-    Make_Histos(data,"histograms_data","barrel"); //implemented in src/nllProfile.cc
-    Make_Histos(data,"histograms_data","endcap"); 
+    Make_Histos(data,"histograms_data","barrel",invMass_var,energyBranchName); //implemented in src/nllProfile.cc
+    Make_Histos(data,"histograms_data","endcap",invMass_var,energyBranchName); 
 
-    Make_Histos(mc,"histograms_mc","barrel"); 
-    Make_Histos(mc,"histograms_mc","endcap"); 
+    Make_Histos(mc,"histograms_mc","barrel",invMass_var,energyBranchName); 
+    Make_Histos(mc,"histograms_mc","endcap",invMass_var,energyBranchName); 
     exit(0);    
     //just do the histos and exit, do not go further on
   }

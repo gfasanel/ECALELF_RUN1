@@ -63,12 +63,14 @@
 using namespace RooStats;
 
 //Make Histos
-void Make_Histos(TChain *chain, string output, string region){//chain,.root,barrel/endcap
+void Make_Histos(TChain *chain, string output, string region,string invMass_var,TString energyBranchName){//chain,.root,barrel/endcap
   //chain can be either data or MC ntuples
 
   cout<<"********************"<<endl;
   cout<<"output: tmp/"<<output+"_"+region<<endl;
 
+  cout<<invMass_var<<endl;//test
+  cout<<energyBranchName<<endl;//test
 
   //Weight in filling histograms
   double selection;
@@ -132,9 +134,11 @@ void Make_Histos(TChain *chain, string output, string region){//chain,.root,barr
   chain->SetBranchAddress("etaEle", etaEle,&b_etaEle);
   chain->SetBranchAddress("etaSCEle", etaSCEle,&b_etaSCEle);
   chain->SetBranchAddress("phiEle", phiEle,&b_phiEle);
-  chain->SetBranchAddress("invMass",&invMass,&b_invMass);		
-  chain->SetBranchAddress("energySCEle",energySCEle,&b_energySCEle);
+  //chain->SetBranchAddress("invMass",&invMass,&b_invMass);		
+  //chain->SetBranchAddress("energySCEle",energySCEle,&b_energySCEle);
   chain->SetBranchAddress("pModeGsfEle",pModeGsfEle,&b_pModeGsfEle);
+  chain->SetBranchAddress(invMass_var.c_str(),&invMass,&b_invMass);		
+  chain->SetBranchAddress(energyBranchName,energySCEle,&b_energySCEle);
   chain->SetBranchAddress("PtEle",PtEle,&b_PtEle);	   	  
   chain->SetBranchAddress("seedEnergySCEle",seedEnergySCEle,&b_seedEnergySCEle); 		    
   chain->SetBranchAddress("chargeEle",chargeEle,&b_chargeEle);	   		  
@@ -337,11 +341,12 @@ void Make_Histos(TChain *chain, string output, string region){//chain,.root,barr
     //char* endptr;
     //double value = strtod(Sel.GetTitle(), &endptr);
 
-    selection=(((((eleID[0] & 2)==2)*((eleID[1] & 2)==2)))*(HLTfire==1))*((recoFlagsEle[0] > 1)*(recoFlagsEle[1] > 1));
+    selection=((eleID[0] & 2)==2)*((eleID[1] & 2)==2)*(HLTfire==1)*(recoFlagsEle[0] > 1)*(recoFlagsEle[1] > 1)*(pModeGsfEle[0]<1000)*(pModeGsfEle[1]<1000);
+    selection*=weight*r9weight[0]*r9weight[1]*ptweight[0]*ptweight[1]*mcGenWeight;
 
-    if(region=="barrel"){
+    if(region=="barrel"){//both electrons in barrel
       selection*=(abs(etaEle[0]) < 1.4442)*(abs(etaEle[1]) < 1.4442);
-    }else if(region=="endcap"){
+    }else if(region=="endcap"){//both electrons in EE
       selection*=(abs(etaEle[0]) > 1.479)*(abs(etaEle[0]) <  2.6)*(abs(etaEle[1]) > 1.479)*(abs(etaEle[1]) <  2.6);
     }
     /*
