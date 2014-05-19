@@ -144,10 +144,7 @@ void Make_Histos(TChain *chain, string output, string region){//chain,.root,barr
   chain->SetBranchAddress("eleID",eleID,&b_eleID);      		    
   chain->SetBranchAddress("HLTfire",&HLTfire,&b_HLTfire);      		    
   chain->SetBranchAddress("recoFlagsEle",recoFlagsEle,&b_recoFlagsEle);
-  //chain->SetBranchAddress("energyEle",energyEle,&b_energyEle);  	     
 
-  //expections for null pointers => poi GetEntry non funziona se non fai cosi..quindi, non serve a niente
-  //Data:
   TBranch *b_scaleEle;
   if(chain->GetBranch("scaleEle")!=NULL){
     chain->SetBranchAddress("scaleEle", corrEle_,&b_scaleEle);
@@ -160,27 +157,25 @@ void Make_Histos(TChain *chain, string output, string region){//chain,.root,barr
   if(chain->GetBranch("puWeight")!=NULL){
     chain->SetBranchAddress("puWeight", &weight,&b_puWeight);
   }
-
+  TBranch *b_r9Weight;
   if(chain->GetBranch("r9Weight")!=NULL){
-    TBranch *b_r9Weight;
     chain->SetBranchAddress("r9Weight", r9weight,&b_r9Weight);
   }
+  TBranch *b_ptWeight;
   if(chain->GetBranch("ptWeight")!=NULL){
-    TBranch *b_ptWeight;
     chain->SetBranchAddress("ptWeight", ptweight,&b_ptWeight);
   }
+  TBranch *b_mcGenWeight;
   if(chain->GetBranch("mcGenWeight")!=NULL){
-    TBranch *b_mcGenWeight;
     chain->SetBranchAddress("mcGenWeight", &mcGenWeight,&b_mcGenWeight);
   }
+  TBranch *b_smearerCat;
   if(chain->GetBranch("smearerCat")!=NULL){
-    TBranch *b_smearerCat;
     chain->SetBranchAddress("smearerCat", smearerCat,&b_smearerCat);
   }
 
   Long64_t entries = chain->GetEntries(); //Number of entries
   //Declaration of histograms             
-  //TH1D* InvMass                        =new TH1D("InvMass","InvMass",10000,0,2000);  
   TH1D* InvMass                        =new TH1D("InvMass","InvMass",100,30,200);  
   TH1D* EneSeed                        =new TH1D("EneSeed","EneSeed",10000,0,3000);
   TH1D* EneSCEleLead                   =new TH1D("EneSCEleLead","EneSCEleLead",10000,0,3000);
@@ -284,8 +279,8 @@ void Make_Histos(TChain *chain, string output, string region){//chain,.root,barr
   //Sel = cutter.GetCut("eleID_loose-trigger-noPF", false,0,false);
   
 
-  //for(Long64_t jentry=0; jentry < entries; jentry++){
-  for(Long64_t jentry=0; jentry < 20; jentry++){//check
+  for(Long64_t jentry=0; jentry < entries; jentry++){
+  //for(Long64_t jentry=0; jentry < 20; jentry++){//check
     Long64_t entryNumber= chain->GetEntryNumber(jentry);
     if(!(jentry%2000000)){
       cout<<"Processing "<<jentry<<"/"<<entries<<endl;
@@ -313,20 +308,27 @@ void Make_Histos(TChain *chain, string output, string region){//chain,.root,barr
     b_recoFlagsEle->GetEntry(ientry);
    
     //Corrections:
-
     if(chain->GetBranch("scaleEle")!=NULL){
-      b_scaleEle->GetEntry(ientry);//->SegFault
+      b_scaleEle->GetEntry(ientry);
     }
     if(chain->GetBranch("smearEle")!=NULL){
-      b_smearEle->GetEntry(ientry);//->SegFault
+      b_smearEle->GetEntry(ientry);
     }
     if(chain->GetBranch("puWeight")!=NULL){
       b_puWeight->GetEntry(ientry);
     }
-    //b_r9Weight->GetEntry(ientry);//	 	  
-    //b_ptWeight->GetEntry(ientry);//potrebbe non esistere	 	  
-    //b_mcGenWeight->GetEntry(ientry);//	  
-    //b_smearerCat->GetEntry(ientry);//
+    if(chain->GetBranch("r9Weight")!=NULL){
+    b_r9Weight->GetEntry(ientry);
+    }
+    if(chain->GetBranch("ptWeight")!=NULL){
+    b_ptWeight->GetEntry(ientry);
+    }
+    if(chain->GetBranch("mcGenWeight")!=NULL){
+    b_mcGenWeight->GetEntry(ientry);
+    }
+    if(chain->GetBranch("smearerCat")!=NULL){   
+    b_smearerCat->GetEntry(ientry);
+    }
 
 
     //cout<<"Massa inv "<<invMass<<endl;
@@ -334,9 +336,6 @@ void Make_Histos(TChain *chain, string output, string region){//chain,.root,barr
     //mysel=atof(Sel);
     //char* endptr;
     //double value = strtod(Sel.GetTitle(), &endptr);
-
-
-    //selection=1; //No selection, just for check
 
     selection=(((((eleID[0] & 2)==2)*((eleID[1] & 2)==2)))*(HLTfire==1))*((recoFlagsEle[0] > 1)*(recoFlagsEle[1] > 1));
 
@@ -369,23 +368,17 @@ void Make_Histos(TChain *chain, string output, string region){//chain,.root,barr
   HList.Write();
     */
     
-    InvMass                        ->Fill(invMass*sqrt(smearEle_[0]*smearEle_[1])*sqrt(corrEle_[0]*corrEle_[1]),selection);//Tes
-    cout<<"smearEle_[0] "<<smearEle_[0]<<endl;
-    cout<<"smearEle_[1] "<<smearEle_[1]<<endl;
-    cout<<"corrEle_[0] "<<corrEle_[0]<<endl;
-    cout<<"corrEle_[1] "<<corrEle_[1]<<endl;
-
-    //InvMass                        ->Fill(invMass,selection);
-    EneSCEleLead                   ->Fill(energySCEle[0],selection);
-    EneSCEleSubLead                ->Fill(energySCEle[1],selection);
+    InvMass                        ->Fill(invMass*sqrt(smearEle_[0]*smearEle_[1])*sqrt(corrEle_[0]*corrEle_[1]),selection);
+    EneSCEleLead                   ->Fill(energySCEle[0]*smearEle_[0]*corrEle_[0],selection);
+    EneSCEleSubLead                ->Fill(energySCEle[1]*smearEle_[1]*corrEle_[1],selection);
     MomentumLead                   ->Fill(pModeGsfEle[0],selection);
     MomentumSubLead                ->Fill(pModeGsfEle[1],selection);
-    EoverPLead                     ->Fill(energySCEle[0]/pModeGsfEle[0],selection);  
-    EoverPSubLead                  ->Fill(energySCEle[1]/pModeGsfEle[1],selection);  
+    EoverPLead                     ->Fill(energySCEle[0]*smearEle_[0]*corrEle_[0]/pModeGsfEle[0],selection);  
+    EoverPSubLead                  ->Fill(energySCEle[1]*smearEle_[1]*corrEle_[1]/pModeGsfEle[1],selection);  
     EtaEleLead                     ->Fill(etaEle[0],selection);
     SeedXSCEle                     ->Fill(seedXSCEle[0],selection);
     SeedYSCEle                     ->Fill(seedYSCEle[0],selection);
-    EneEleLeadvsEtaEleLead         ->Fill(etaEle[0],energySCEle[0],selection);
+    EneEleLeadvsEtaEleLead         ->Fill(etaEle[0],energySCEle[0]*smearEle_[0]*corrEle_[0],selection);
     MapEBLead                      ->Fill(seedYSCEle[0],seedXSCEle[0],selection);
     MapEELead                      ->Fill(seedYSCEle[0],seedXSCEle[0]*(etaSCEle[0]/fabs(etaSCEle[0])),selection*(fabs(etaSCEle[0])>1.48)*(fabs(etaSCEle[0])<2.6));
     MapEBPLead                     ->Fill(seedYSCEle[0],seedXSCEle[0],selection*fabs(etaSCEle[0])<1.479*pModeGsfEle[0]);
@@ -393,11 +386,11 @@ void Make_Histos(TChain *chain, string output, string region){//chain,.root,barr
     
 
     for(int i=0;i<2;i++){//difference between double and single electron
-    EneSeed                    ->Fill(seedEnergySCEle[i],selection);
-    EneSCEle                   ->Fill(energySCEle[i],selection);
+    EneSeed                    ->Fill(seedEnergySCEle[i]*smearEle_[i]*corrEle_[i],selection);
+    EneSCEle                   ->Fill(energySCEle[i]*smearEle_[i]*corrEle_[i],selection);
     Momentum                   ->Fill(pModeGsfEle[i],selection);
-    EoverP                     ->Fill(energySCEle[i]/pModeGsfEle[i],selection);  
-    EneElevsEtaEle             ->Fill(etaEle[i],energySCEle[i],selection);
+    EoverP                     ->Fill(energySCEle[i]*smearEle_[i]*corrEle_[i]/pModeGsfEle[i],selection);  
+    EneElevsEtaEle             ->Fill(etaEle[i],energySCEle[i]*smearEle_[i]*corrEle_[i],selection);
     MapEB                      ->Fill(seedYSCEle[i],seedXSCEle[i],selection);
     MapEE                      ->Fill(seedYSCEle[i],seedXSCEle[i]*(etaSCEle[i]/fabs(etaSCEle[i])),selection*(fabs(etaSCEle[i])>1.48)*(fabs(etaSCEle[i])<2.6));
     MapEBP                     ->Fill(seedYSCEle[i],seedXSCEle[i],selection*fabs(etaSCEle[i])<1.479*pModeGsfEle[i]);
