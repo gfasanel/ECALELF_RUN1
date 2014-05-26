@@ -67,13 +67,14 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
   //chain can be either data or MC ntuples
 
   cout<<"********************"<<endl;
-  cout<<"output: tmp/"<<output+"_"+region<<endl;
+  cout<<"output: tmp/"<<invMass_var+"/"+output+"_"+region<<endl;
 
   cout<<invMass_var<<endl;//test
   cout<<energyBranchName<<endl;//test
 
   //Weight in filling histograms
   double selection;
+  double total_weight=1;
 
   //Declaration of variables
   Long64_t        eventNumber;		 
@@ -97,6 +98,7 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
   Float_t         invMass;	     	 
   Float_t         energySCEle[2];    	 
   Float_t         pModeGsfEle[2];    	 
+  Float_t         pAtVtxGsfEle[2];    	 
   Float_t         PtEle[2];	     	 
   Float_t         seedEnergySCEle[2];	 
   Float_t         chargeEle[2];	     	 
@@ -119,6 +121,7 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
   TBranch *b_invMass;	     	  
   TBranch *b_energySCEle;    	  
   TBranch *b_pModeGsfEle;    	  
+  TBranch *b_pAtVtxGsfEle;    	  
   TBranch *b_PtEle;	     	  
   TBranch *b_seedEnergySCEle;	  
   TBranch *b_chargeEle;	     	  
@@ -134,9 +137,8 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
   chain->SetBranchAddress("etaEle", etaEle,&b_etaEle);
   chain->SetBranchAddress("etaSCEle", etaSCEle,&b_etaSCEle);
   chain->SetBranchAddress("phiEle", phiEle,&b_phiEle);
-  //chain->SetBranchAddress("invMass",&invMass,&b_invMass);		
-  //chain->SetBranchAddress("energySCEle",energySCEle,&b_energySCEle);
   chain->SetBranchAddress("pModeGsfEle",pModeGsfEle,&b_pModeGsfEle);
+  chain->SetBranchAddress("pAtVtxGsfEle",pAtVtxGsfEle,&b_pAtVtxGsfEle);
   chain->SetBranchAddress(invMass_var.c_str(),&invMass,&b_invMass);		
   chain->SetBranchAddress(energyBranchName,energySCEle,&b_energySCEle);
   chain->SetBranchAddress("PtEle",PtEle,&b_PtEle);	   	  
@@ -189,10 +191,12 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
   TH1D* MomentumLead                   =new TH1D("MomentumLead","MomentumLead",10000,0,3000);
   TH1D* MomentumSubLead                =new TH1D("MomentumSubLead","MomentumSubLead",10000,0,3000);
   TH1D* Momentum                       =new TH1D("Momentum","Momentum",10000,0,3000);
+  TH1D* Momentum_Vertex                =new TH1D("Momentum_Vertex","Momentum_Vertex",10000,0,3000);
 
   TH1D* EoverPLead                     =new TH1D("EoverPLead","EoverPLead",100,0,1.5);
   TH1D* EoverPSubLead                  =new TH1D("EoverPSubLead","EoverPSubLead",100,0,1.5);
-  TH1D* EoverP                         =new TH1D("EoverP","EoverP",100,0,2);
+  TH1D* EoverP                         =new TH1D("EoverP","EoverP",1000,0,5);
+  TH1D* EoverP_Vertex                  =new TH1D("EoverP_Vertex","EoverP_Vertex",1000,0,5);
 
   TH1D* EtaEleLead                     =new TH1D("EtaEleLead","EtaEleLead",1000,-5,5);
   TH1D* SeedXSCEle                     =new TH1D("SeedXSCEle","SeedXSCEle",1000,-200,200);
@@ -264,7 +268,9 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
   EneSeed                        -> Sumw2(); 
   EneSCEle                       -> Sumw2();
   EoverP                         -> Sumw2();
+  EoverP_Vertex                  -> Sumw2();
   Momentum                       -> Sumw2();
+  Momentum_Vertex                -> Sumw2();
   EneElevsEtaEle                 -> Sumw2();
   EneElevsR9Ele                  -> Sumw2();
   PElevsEtaEle                   -> Sumw2();
@@ -292,7 +298,7 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
 
     Long64_t ientry =chain->LoadTree(jentry);
     if (ientry < 0) break;
-    //chain->GetEntry(entryNumber); //Works but very slow
+    //chain->GetEntry(entryNumber); //Works but it's very slow
 
     b_eventNumber->GetEntry(ientry);		  	  
     b_etaEle->GetEntry(ientry);	     	  
@@ -301,6 +307,7 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
     b_invMass->GetEntry(ientry);	     	  
     b_energySCEle->GetEntry(ientry);    	  
     b_pModeGsfEle->GetEntry(ientry);    	  
+    b_pAtVtxGsfEle->GetEntry(ientry);    	  
     b_PtEle->GetEntry(ientry);	     	  
     b_seedEnergySCEle->GetEntry(ientry);	  
     b_chargeEle->GetEntry(ientry);	     	  
@@ -341,14 +348,33 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
     //char* endptr;
     //double value = strtod(Sel.GetTitle(), &endptr);
 
-    selection=((eleID[0] & 2)==2)*((eleID[1] & 2)==2)*(HLTfire==1)*(recoFlagsEle[0] > 1)*(recoFlagsEle[1] > 1)*(pModeGsfEle[0]<1000)*(pModeGsfEle[1]<1000);
-    selection*=weight*r9weight[0]*r9weight[1]*ptweight[0]*ptweight[1]*mcGenWeight;
+    //selection=((eleID[0] & 2)==2)*((eleID[1] & 2)==2)*(HLTfire==1)*(recoFlagsEle[0] > 1)*(recoFlagsEle[1] > 1)*(pModeGsfEle[0]<1000)*(pModeGsfEle[1]<1000);
+    //Only when data/mc==1
+    //selection=((eleID[0] & 2)==2)*((eleID[1] & 2)==2)*(HLTfire==1)*(recoFlagsEle[0] > 1)*(recoFlagsEle[1] > 1)*(pModeGsfEle[0]>20)*(pModeGsfEle[1]>20)*(pModeGsfEle[0]<100)*(pModeGsfEle[1]<100)*(energySCEle[0]>40)*(energySCEle[1]>40)*(energySCEle[0]<100)*(energySCEle[1]<100);
+
+    //Cut in Pt because weights are calculated in this range
+    //And single electron???
+    selection=((eleID[0] & 2)==2)*((eleID[1] & 2)==2)*(HLTfire==1)*(recoFlagsEle[0] > 1)*(recoFlagsEle[1] > 1)*(PtEle[0]>20)*(PtEle[1]>20);
+    total_weight=1;
+    total_weight*=weight*r9weight[0]*r9weight[1]*ptweight[0]*ptweight[1];//*mcGenWeight;
+    //weight is the puWeight: for MC is not 1
+    //mcGenWeight is -1 for data => 1 for MC
+    selection*=total_weight;
 
     if(region=="barrel"){//both electrons in barrel
       selection*=(abs(etaEle[0]) < 1.4442)*(abs(etaEle[1]) < 1.4442);
     }else if(region=="endcap"){//both electrons in EE
       selection*=(abs(etaEle[0]) > 1.479)*(abs(etaEle[0]) <  2.6)*(abs(etaEle[1]) > 1.479)*(abs(etaEle[1]) <  2.6);
+    }else if(region=="barrel_goodR9"){//both electrons in barrel, both with good r9
+      selection*=(abs(etaEle[0]) < 1.4442)*(abs(etaEle[1]) < 1.4442)*(R9Ele[0]>0.94)*(R9Ele[1]>0.94);
+    }else if(region=="endcap_goodR9"){//both electrons in EE, both with good r9
+	selection*=(abs(etaEle[0]) > 1.479)*(abs(etaEle[0]) <  2.6)*(abs(etaEle[1]) > 1.479)*(abs(etaEle[1]) <  2.6)*(R9Ele[0]>0.94)*(R9Ele[1]>0.94);
+    }else if(region=="barrel_badR9"){//both electrons in barrel, both with bad r9
+      selection*=(abs(etaEle[0]) < 1.4442)*(abs(etaEle[1]) < 1.4442)*(R9Ele[0]<0.94)*(R9Ele[1]<0.94);
+    }else if(region=="endcap_badR9"){//both electrons in EE, both with bad r9
+	selection*=(abs(etaEle[0]) > 1.479)*(abs(etaEle[0]) <  2.6)*(abs(etaEle[1]) > 1.479)*(abs(etaEle[1]) <  2.6)*(R9Ele[0]<0.94)*(R9Ele[1]<0.94);
     }
+
     /*
 //create histograms
  TObjArray HList(0);//fuori dal loop
@@ -374,7 +400,7 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
     */
     
     InvMass                        ->Fill(invMass*sqrt(smearEle_[0]*smearEle_[1])*sqrt(corrEle_[0]*corrEle_[1]),selection);
-    EneSCEleLead                   ->Fill(energySCEle[0]*smearEle_[0]*corrEle_[0],selection);
+    /*EneSCEleLead                   ->Fill(energySCEle[0]*smearEle_[0]*corrEle_[0],selection);
     EneSCEleSubLead                ->Fill(energySCEle[1]*smearEle_[1]*corrEle_[1],selection);
     MomentumLead                   ->Fill(pModeGsfEle[0],selection);
     MomentumSubLead                ->Fill(pModeGsfEle[1],selection);
@@ -388,13 +414,15 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
     MapEELead                      ->Fill(seedYSCEle[0],seedXSCEle[0]*(etaSCEle[0]/fabs(etaSCEle[0])),selection*(fabs(etaSCEle[0])>1.48)*(fabs(etaSCEle[0])<2.6));
     MapEBPLead                     ->Fill(seedYSCEle[0],seedXSCEle[0],selection*fabs(etaSCEle[0])<1.479*pModeGsfEle[0]);
     MapEEPLead                     ->Fill(seedYSCEle[0],seedXSCEle[0]*(etaSCEle[0]/fabs(etaSCEle[0])),selection*(fabs(etaSCEle[0])>1.48)*(fabs(etaSCEle[0])<2.6)*pModeGsfEle[0]);
-    
+    */    
 
     for(int i=0;i<2;i++){//difference between double and single electron
     EneSeed                    ->Fill(seedEnergySCEle[i]*smearEle_[i]*corrEle_[i],selection);
     EneSCEle                   ->Fill(energySCEle[i]*smearEle_[i]*corrEle_[i],selection);
     Momentum                   ->Fill(pModeGsfEle[i],selection);
+    Momentum_Vertex            ->Fill(pAtVtxGsfEle[i],selection);
     EoverP                     ->Fill(energySCEle[i]*smearEle_[i]*corrEle_[i]/pModeGsfEle[i],selection);  
+    EoverP_Vertex              ->Fill(energySCEle[i]*smearEle_[i]*corrEle_[i]/pAtVtxGsfEle[i],selection);  
     EneElevsEtaEle             ->Fill(etaEle[i],energySCEle[i]*smearEle_[i]*corrEle_[i],selection);
     MapEB                      ->Fill(seedYSCEle[i],seedXSCEle[i],selection);
     MapEE                      ->Fill(seedYSCEle[i],seedXSCEle[i]*(etaSCEle[i]/fabs(etaSCEle[i])),selection*(fabs(etaSCEle[i])>1.48)*(fabs(etaSCEle[i])<2.6));
@@ -405,9 +433,9 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
 
   }
 
-  TFile* histograms=new TFile(("tmp/"+output+"_"+region+".root").c_str(),"RECREATE");
+  TFile* histograms=new TFile(("tmp/"+invMass_var+"/"+output+"_"+region+".root").c_str(),"RECREATE");
   InvMass            ->Write();
-  EneSCEleLead       ->Write();
+  /*EneSCEleLead       ->Write();
   EneSCEleSubLead    ->Write();
   MomentumLead       ->Write();
   MomentumSubLead    ->Write();
@@ -421,12 +449,14 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
   MapEBLead->Write();
   MapEELead->Write();
   MapEBPLead->Write();
-  MapEEPLead->Write();
+  MapEEPLead->Write();*/
 
   EneSeed                        ->Write();
   EneSCEle                       -> Write();
   EoverP                         -> Write();
+  EoverP_Vertex                  -> Write();
   Momentum                       -> Write();
+  Momentum_Vertex                -> Write();
   EneElevsEtaEle                 -> Write();
   //EneElevsR9Ele                  -> Write();
   //PElevsEtaEle                   -> Write();

@@ -207,6 +207,7 @@ int main(int argc, char **argv) {
   namespace po = boost::program_options;
   unsigned int nEvents_runDivide=100000;
   std::string chainFileListName;
+  std::string MC="";
   std::string regionsFileName;
   std::string runRangesFileName;
   std::string dataPUFileName, mcPUFileName;
@@ -334,6 +335,7 @@ int main(int argc, char **argv) {
     ;
   inputOption.add_options()
     ("chainFileList,f", po::value< string >(&chainFileListName), "Configuration file with input file list")
+    ("MC,m", po::value< string >(&MC), "activate only that particular MC")
     ("regionsFile", po::value< string >(&regionsFileName), "Configuration file with regions")
     ("runRangesFile", po::value< string >(&runRangesFileName), "Configuration file with run ranges")
     ("initFile", po::value< string >(&initFileName), "Configuration file with init values of fit model")
@@ -495,6 +497,23 @@ int main(int argc, char **argv) {
       chainFileList.ignore(1000,'\n');
       continue;
     }
+    if(MC=="Powheg"){
+      if(tag.Contains('s1') || tag.Contains('s3')){//Depending on the MC you want
+	chainFileList.ignore(1000,'\n');
+	continue;
+      }
+    }else if(MC=="MadGraph"){
+      if(tag.Contains('s2') || tag.Contains('s3')){//Depending on the MC you want
+	chainFileList.ignore(1000,'\n');
+	continue;
+      }
+    }else if(MC=="Sherpa"){
+      if(tag.Contains('s1') || tag.Contains('s2')){//Depending on the MC you want
+	chainFileList.ignore(1000,'\n');
+	continue;
+      }
+    }
+
     chainFileList >> chainName >> fileName;
     if(chainName.Contains("Hist")){
       // use these value only if not provided by the command line
@@ -1083,11 +1102,23 @@ int main(int argc, char **argv) {
   if(vm.count("doHistos")){
     //looping over ntuples:
     //
-    Make_Histos(data,"histograms_data","barrel",invMass_var,energyBranchName); //implemented in src/nllProfile.cc
-    Make_Histos(data,"histograms_data","endcap",invMass_var,energyBranchName); 
+    if(MC=="data_only"){
+      //Make_Histos(data,"histograms_data","barrel_goodR9",invMass_var,energyBranchName); //implemented in src/nllProfile.cc
+      //Make_Histos(data,"histograms_data","endcap_goodR9",invMass_var,energyBranchName); 
+      //Make_Histos(data,"histograms_data","barrel_badR9",invMass_var,energyBranchName);
+      //Make_Histos(data,"histograms_data","endcap_badR9",invMass_var,energyBranchName); 
+      Make_Histos(data,"histograms_data","barrel",invMass_var,energyBranchName);
+      Make_Histos(data,"histograms_data","endcap",invMass_var,energyBranchName); 
+    }
 
-    Make_Histos(mc,"histograms_mc","barrel",invMass_var,energyBranchName); 
-    Make_Histos(mc,"histograms_mc","endcap",invMass_var,energyBranchName); 
+    if(MC!="data_only"){
+      //Make_Histos(mc,"histograms_"+MC,"barrel_goodR9",invMass_var,energyBranchName); 
+      //Make_Histos(mc,"histograms_"+MC,"endcap_goodR9",invMass_var,energyBranchName); 
+      //Make_Histos(mc,"histograms_"+MC,"barrel_badR9",invMass_var,energyBranchName); 
+      //Make_Histos(mc,"histograms_"+MC,"endcap_badR9",invMass_var,energyBranchName); 
+      Make_Histos(mc,"histograms_"+MC,"barrel",invMass_var,energyBranchName); 
+      Make_Histos(mc,"histograms_"+MC,"endcap",invMass_var,energyBranchName); 
+    }
     exit(0);    
     //just do the histos and exit, do not go further on
   }
