@@ -1,3 +1,6 @@
+#usage: ./script/GenRootChain.sh -f data/validation/22Jan2012-runDepMCAll_v3.dat --corrEleType=HggRunEtaR9Et --smearEleType=stochastic
+#root -l tmp/d_chain.root tmp/s1_chain.root tmp/s2_chain.root tmp/s3_chain.root tmp/load.C 
+
 #!/bin/bash
 
 
@@ -5,6 +8,8 @@
 commonCut=Et_25-trigger-noPF
 selection=loose
 invMass_var=invMass_SC_regrCorr_ele
+#invMass_var=invMass_SC_regrCorrSemiParV5_ele
+#invMass_var=invMass_SC
 configFile=data/validation/monitoring_2012_53X.dat
 regionsFile=data/regions/scaleStep2smearing_9.dat
 
@@ -26,6 +31,8 @@ usage(){
     echo " --regionsFile arg (=${regionsFile})"
     echo " --corrEleType arg"
     echo " --corrEleFile arg"
+    echo " --smearEleType arg"
+    echo " --smearEleFile arg"
     echo " --fitterOptions arg"
 #    echo " --puName arg             "
 #    echo " --runRangesFile arg (=${runRangesFile})  run ranges for stability plots"
@@ -54,7 +61,7 @@ desc(){
 
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -u -o hf: -l help,runRangesFile:,selection:,invMass_var:,puName:,baseDir:,rereco:,validation,stability,etaScale,systematics,slides,onlyTable,test,commonCut:,period:,noPU,outDirImg:,addBranch:,regionsFile:,corrEleType:,corrEleFile:,fitterOptions: -- "$@")
+if ! options=$(getopt -u -o hf: -l help,runRangesFile:,selection:,invMass_var:,puName:,baseDir:,rereco:,validation,stability,etaScale,systematics,slides,onlyTable,test,commonCut:,period:,noPU,outDirImg:,addBranch:,regionsFile:,corrEleType:,corrEleFile:,smearEleType:,smearEleFile:,fitterOptions: -- "$@")
 then
     # something went wrong, getopt will put out an error message for us
     exit 1
@@ -73,6 +80,8 @@ do
 	--regionsFile) regionsFile=$2; shift;;
 	--corrEleType) corrEleType="--corrEleType=$2"; shift;;
 	--corrEleFile) corrEleFile="--corrEleFile=$2"; shift;;
+	--smearEleType) smearEleType="--smearEleType=$2"; shift;;
+	--smearEleFile) smearEleFile="--smearEleFile=$2"; shift;;
 	--fitterOptions) fitterOptions="$fitterOptions $2"; shift;;
         --invMass_var) invMass_var=$2; echo "[OPTION] invMass_var = ${invMass_var}"; shift;;
 	--outDirImg) outDirImg=$2; shift;;
@@ -139,7 +148,11 @@ fi
 
 # saving the root files with the chains
 rm tmp/*_chain.root
-./bin/ZFitter.exe --saveRootMacro -f ${configFile} --regionsFile=${regionsFile} ${noPU} ${addBranchList} ${corrEleFile} ${corrEleType} ${fitterOptions} || exit 1
+
+./bin/ZFitter.exe --saveRootMacro -f ${configFile} --regionsFile=${regionsFile} ${noPU} ${addBranchList} ${corrEleFile} ${corrEleType} ${smearEleFile} ${smearEleType} ${fitterOptions} || exit 1
+
+#echo ${noPU} ${addBranchList} ${corrEleFile} ${corrEleType} ${fitterOptions}
+
 
 # adding all the chains in one file
 for file in tmp/s[0-9]*_selected_chain.root tmp/d_selected_chain.root tmp/s_selected_chain.root 
