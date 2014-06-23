@@ -9,7 +9,7 @@ checkVERSION(){
 	CMSSW_5_3_14_patch2)
 	    echo "[INFO] Installing for $CMSSW_VERSION (2012 8TeV)"
 	    ;;
-	CMSSW_7_0_0_*)
+	CMSSW_7_0_*)
 	    echo "[INFO] Installing for $CMSSW_VERSION (2012 8TeV)"
 	    ;;
 	*)
@@ -59,27 +59,13 @@ if [ ! -d "$myDir" ];then
     else
 	git clone git@github.com:ECALELFS/ECALELF.git $myDir  >> setup.log || exit 1 # read-only mode
     fi
-    #git checkout merge-gerosa-condor
 fi
-cd $myDir
 
-cd ALCARAW_RECO/
+cd $myDir/ALCARAW_RECO/
 
 ### if you are not Shervin download this to have some useful scripts
 if [ "$USER" != "shervin" ];then
-git clone https://github.com/ECALELFS/Utilities.git bin
-# Please be sure to add this directory to you default PATH variable
-# for bash
-#PATH=$PATH:$CMSSW_BASE/src/calibration/ALCARAW_RECO/bin
-# for tcsh
-#setenv PATH $PATH":$CMSSW_BASE/src//calibration/SANDBOX/bin" # (I think)
-###
-#echo "[WARNING] Remember to do this after all cmsenv:"
-#echo "# for bash
-#PATH=$PATH:$CMSSW_BASE/src/$myDir/ALCARAW_RECO/bin
-## for tcsh
-#setenv PATH $PATH\":$CMSSW_BASE/src/$myDir/ALCARAW_RECO/bin\" 
-#"
+    git clone https://github.com/ECALELFS/Utilities.git bin
 fi
 
 #cd EgammaAnalysis/ElectronTools/data/
@@ -143,8 +129,8 @@ case $CMSSW_VERSION in
 ###### New Josh regression
 	mkdir HiggsAnalysis/
 	cd HiggsAnalysis/
-	git clone https://github.com/bendavid/GBRLikelihood.git 
-	git clone https://github.com/bendavid/GBRLikelihoodEGTools.git
+	git clone -b legacyCompatibility https://github.com/bendavid/GBRLikelihood.git 
+	git clone -b hggpaperV6 https://github.com/bendavid/GBRLikelihoodEGTools.git
 	cd -
 	mv GBRLikelihoodEGTools/data/*.root $myDir/EleNewEnergiesProducer/data/
 
@@ -170,46 +156,8 @@ case $CMSSW_VERSION in
 
 	;;
     CMSSW_7_*)
-	#addpkg  PhysicsTools/PatAlgos V08-10-05 >> setup.log
-###### - Electron regression 5_3_X
-#	git clone https://github.com/cms-cvs-history/DataFormats-PatCandidates DataFormats/PatCandidates >> setup.log || exit 1
-#        cd DataFormats/PatCandidates >> setup.log || exit 1
-#        git checkout DataFormats-PatCandidates-V06-05-06-10 >> setup.log || exit 1
-#        cd - >> setup.log || exit 1
-#	git clone https://github.com/cms-cvs-history/PhysicsTools-PatAlgos PhysicsTools/PatAlgos  >> setup.log || exit 1
-#        cd PhysicsTools/PatAlgos >> setup.log || exit 1
-#        git checkout PhysicsTools-PatAlgos-V08-09-56 >> setup.log || exit 1
-#        cd - >> setup.log || exit 1
-#	git clone https://github.com/cms-cvs-history/PhysicsTools-PatUtils PhysicsTools/PatUtils  >> setup.log || exit 1
-#        cd PhysicsTools/PatUtils >> setup.log || exit 1
-#        git checkout PhysicsTools-PatUtils-V03-09-28 >> setup.log || exit 1
-#        cd - >> setup.log || exit 1
-#	git clone https://github.com/cms-cvs-history/DataFormats-CaloRecHit DataFormats/CaloRecHit  >> setup.log || exit 1
-#        cd DataFormats/CaloRecHit >> setup.log || exit 1
-#        git checkout DataFormats-CaloRecHit-V02-05-11 >> setup.log || exit 1
-#        cd - >> setup.log || exit 1
-#	git clone https://github.com/cms-cvs-history/DataFormats-StdDictionaries DataFormats/StdDictionaries  >> setup.log || exit 1
-#        cd DataFormats/StdDictionaries >> setup.log || exit 1
-#        git checkout DataFormats-StdDictionaries-V00-02-14 >> setup.log || exit 1
-#        cd - >> setup.log || exit 1
-#	git clone https://github.com/cms-cvs-history/FWCore-GuiBrowsers FWCore/GuiBrowsers  >> setup.log || exit 1
-#        cd FWCore/GuiBrowsers >> setup.log || exit 1
-#        git checkout FWCore-GuiBrowsers-V00-00-70 >> setup.log || exit 1
-#        cd - >> setup.log || exit 1
-#	git clone https://github.com/cms-cvs-history/RecoMET-METProducers RecoMET/METProducers  >> setup.log || exit 1
-#        cd RecoMET/METProducers >> setup.log || exit 1
-#        git checkout RecoMET-METProducers-V03-03-12-02 >> setup.log || exit 1
-#        cd - >> setup.log || exit 1
-#	git clone https://github.com/cms-cvs-history/RecoEgamma-EgammaTools RecoEgamma/EgammaTools  >> setup.log || exit 1
-#        cd RecoEgamma/EgammaTools >> setup.log || exit 1
-#        git checkout RecoEgamma-EgammaTools-V09-00-01 >> setup.log || exit 1
-#        cd - >> setup.log || exit 1
 	git-cms-addpkg EgammaAnalysis/ElectronTools >> setup.log || exit 1
-#        git clone https://github.com/cms-analysis/EgammaAnalysis-ElectronTools EgammaAnalysis/ElectronTools 
-#        cd EgammaAnalysis/ElectronTools  >> setup.log || exit 1
-#	git checkout EgammaAnalysis-ElectronTools-MD-21Apr2013-test-2 >> setup.log || exit 1
-#        cd - >> setup.log || exit 1
-#	patch -p0 < $myDir/ALCARAW_RECO/test/electronRegression.patch >> setup.log || exit 1
+	patch -p1 < $myDir/ALCARAW_RECO/test/electronRegression700.patch >> setup.log || exit 1
 
 	cd EgammaAnalysis/ElectronTools/data/ >> setup.log || exit 1
 	cat download.url | grep '.root' | xargs wget  >> setup.log || exit 1
@@ -218,13 +166,15 @@ case $CMSSW_VERSION in
 ###### New Josh regression
 	mkdir HiggsAnalysis/
 	cd HiggsAnalysis/
-	git clone https://github.com/bendavid/GBRLikelihood.git 
-	git clone https://github.com/bendavid/GBRLikelihoodEGTools.git
+	git clone -b legacyCompatibility https://github.com/bendavid/GBRLikelihood.git 
+	git clone -b hggpaperV6 https://github.com/bendavid/GBRLikelihoodEGTools.git
 	cd -
 	mv GBRLikelihoodEGTools/data/*.root $myDir/EleNewEnergiesProducer/data/
 
+	sed -i 's|REGRESSION=3|REGRESSION=4|' Calibration/*/BuildFile.xml
+	echo "<Flags CppDefines=\"CMSSW_7_0_X\"/>" >> $myDir/EleSelectionProducers/BuildFile.xml
 
-	echo "[STATUS] applying patch for CMSSW_5_X"
+	echo "[STATUS] applying patch for CMSSW_5_X and following"
 	sed 's|,eleIt->ecalEnergyError()\*(nearestSC.*);|);|' $myDir/ALCARAW_RECO/src/ElectronRecalibSuperClusterAssociatorSH.cc_topatch > $myDir/ALCARAW_RECO/src/ElectronRecalibSuperClusterAssociatorSH.cc
 
 
@@ -234,9 +184,8 @@ case $CMSSW_VERSION in
     if [ "`grep -c getEcalEBRecHitCollection $CMSSW_BASE/src/RecoEcal/EgammaCoreTools/interface/EcalClusterLazyTools.h`" == "0" ];then
 	patch  -p0 < $myDir/ALCARAW_RECO/test/clusterLazyTools.patch >> setup.log || exit 1
     fi
-#    patch  -p0 < $myDir/ALCARAW_RECO/test/class_def.xml.patch >> setup.log || exit 1
 
-	cp /afs/cern.ch/user/b/bendavid/cmspublic/regweights52xV3/*.root $myDir/EleNewEnergiesProducer/data/ >> setup.log || exit 1
+    cp /afs/cern.ch/user/b/bendavid/cmspublic/regweights52xV3/*.root $myDir/EleNewEnergiesProducer/data/ >> setup.log || exit 1
 
 
 
@@ -245,7 +194,7 @@ esac
 
 
 # compile
-scram b -j8
+scram b -j16
 
 # for file in `find -name '*.url'`; 
 #   do 

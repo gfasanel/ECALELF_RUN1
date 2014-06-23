@@ -86,6 +86,9 @@ setEnergy(){
 	*Summer12*)
 	    ENERGY=8TeV
 	    ;;
+	*13TeV*)
+	    ENERGY=13TeV
+	    ;;
 	*8TeV*)
 	    ENERGY=8TeV
 	    ;;
@@ -101,13 +104,15 @@ setEnergy(){
 	*SingleElectronFlat*)
 	    ENERGY=gun
 	    ;;
+	*sharper*)
+	    ENERGY=13TeV
+	    ;;
 	*)
 	    echo "[ERROR] Center of mass energy not determined for $1" >> /dev/stderr
 	    echo "        Check implementation in prodFunctions.sh"    >> /dev/stderr
 	    exit 1
     esac
 }
-
 
 
 setUserRemoteDirAlcarereco(){

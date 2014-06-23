@@ -36,7 +36,7 @@ GsfMatchedPhotonCands = cms.EDProducer("ElectronMatchedCandidateProducer",
 ##   
 # Trigger  ##################
 PassingHLT = cms.EDProducer("trgMatchGsfElectronProducer",    
-    InputProducer = cms.InputTag( 'gsfElectrons' ),                          
+    InputProducer = cms.InputTag( 'gedGsfElectrons' ),                          
     hltTags = cms.untracked.string( HLTPath ),
     triggerEventTag = cms.untracked.InputTag("hltTriggerSummaryAOD","",HLTProcessName),
     triggerResultsTag = cms.untracked.InputTag("TriggerResults","",HLTProcessName)   
@@ -63,7 +63,7 @@ ZSCHltFilter = HLTrigger.HLTfilters.hltHighLevel_cfi.hltHighLevel.clone(
 
 
 selectedElectrons = cms.EDFilter("GsfElectronRefSelector",
-                                 src = cms.InputTag( 'gsfElectrons' ),
+                                 src = cms.InputTag( 'gedGsfElectrons' ),
                                  cut = cms.string(
     "(abs(superCluster.eta)<2.5) && (energy*sin(superClusterPosition.theta)> 15)")
                                          )
@@ -159,9 +159,9 @@ selectedCands = cms.EDFilter("AssociatedVariableMaxCutCandRefSelector",
                              max = cms.double("0.5")
                              )
 
-eleSelSeq = cms.Sequence(
-    PassingVeryLooseId + PassingMediumId + PassingTightId + #(eleSelectionProducers * selectedCands) +
-    (SCselector*eleSC))
+eleSelSeq = cms.Sequence( PassingVeryLooseId + PassingTightId + 
+                          (SCselector*eleSC)
+                          )
 
 
 ############################################################
@@ -190,9 +190,10 @@ WenuSelector = cms.EDProducer("CandViewShallowCloneCombiner",
 EleSCSelector = cms.EDProducer("CandViewShallowCloneCombiner",
                                decay = cms.string("PassingVeryLooseId eleSC"),
                                checkCharge = cms.bool(False), 
-                               cut   = cms.string("mass > 40 && mass < 140")
+#                               cut   = cms.string("40 <mass < 140 && daughter(0).pt>27")
+                               cut   = cms.string("40 <mass < 140")
                                )
-WZSelector = cms.EDProducer("CandMerger",
+WZSelector = cms.EDProducer("CandViewMerger",
                             src = cms.VInputTag("WenuSelector", "ZeeSelector", "EleSCSelector")
                             )
 
@@ -211,19 +212,16 @@ ZeeFilter = cms.EDFilter("CandViewCountFilter",
                          minNumber = cms.uint32(1)
                          )
 
-WZFilter = cms.EDFilter("CandViewCountFilter",
-                         src = cms.InputTag("WZSelector"),
-                         minNumber = cms.uint32(1)
-                         )
-
 ZSCFilter = cms.EDFilter("CandViewCountFilter",
-                         src = cms.InputTag("eleSC"),
+                         src = cms.InputTag("EleSCSelector"),
                          minNumber = cms.uint32(1)
                          )
-FilterSeq = cms.Sequence(eleSelSeq * (ZeeSelector + WenuSelector + EleSCSelector))
-ZeeFilterSeq = cms.Sequence(eleSelSeq * ZeeSelector * ZeeFilter)    
-WenuFilterSeq = cms.Sequence(eleSelSeq * WenuSelector * WenuFilter)
-WZFilterSeq = cms.Sequence(eleSelSeq * WZFilter)
-ZSCFilterSeq    = cms.Sequence(ZSCHltFilter * eleSelSeq * EleSCSelector * ZSCFilter)
 
+WZFilter = cms.EDFilter("CandViewCountFilter",
+                        src = cms.InputTag("WZSelector"),
+                        minNumber = cms.uint32(1)
+                        )
+
+FilterSeq = cms.Sequence(eleSelSeq * (ZeeSelector + WenuSelector + EleSCSelector) * WZSelector)
+ZSCSingleEleFilterSeq = cms.Sequence(~ZSCHltFilter * eleSelSeq * EleSCSelector * ZSCFilter)
 
