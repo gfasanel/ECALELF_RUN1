@@ -356,7 +356,8 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
     //And single electron???
     selection=((eleID[0] & 2)==2)*((eleID[1] & 2)==2)*(HLTfire==1)*(recoFlagsEle[0] > 1)*(recoFlagsEle[1] > 1)*(PtEle[0]>20)*(PtEle[1]>20);
     total_weight=1;
-    total_weight*=weight*r9weight[0]*r9weight[1]*ptweight[0]*ptweight[1];//*mcGenWeight;
+    total_weight*=weight*r9weight[0]*r9weight[1]*ptweight[0]*ptweight[1]*mcGenWeight;//if sherpa-> add mcGenWeight
+    //cout<<"mcGenWeight "<<mcGenWeight<<endl;
     //weight is the puWeight: for MC is not 1
     //mcGenWeight is -1 for data => 1 for MC
     selection*=total_weight;

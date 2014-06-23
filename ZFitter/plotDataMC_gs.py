@@ -16,7 +16,8 @@ text="CMS Preliminary #sqrt{s}=8 TeV"
 # associate name of the variable to the expression to print it. This list should contain all the variables to plot
 variables={}
 variables['invMass']='invMass'
-variables['EoverP']='energySCEle[0]/pModeGsfEle[0] + energySCEle[1]/pModeGsfEle[1]'
+variables['EoverP']='energySCEle/pModeGsfEle'
+#variables['EoverP']='energySCEle[0]/pModeGsfEle[0] + energySCEle[1]/pModeGsfEle[1]'
 #variables['etaEleLead']='etaEle[0]'
 
 #characteristics of the plot of a given variable
@@ -34,10 +35,11 @@ Presel='((eleID[0] & 2)==2) && ((eleID[1] & 2)==2) && (HLTfire==1) && (recoFlags
 EB='abs(etaEle[0])<1.4442 && abs(etaEle[1])<1.4442'
 EE='abs(etaEle[0])>1.479 && abs(etaEle[0])<2.6 && abs(etaEle[1])>1.479 && abs(etaEle[1])<2.6'
 gain0='gainEle[0]==0'
-gain1='gainEle[1]==1'
-gain2='gainEle[2]==2'
+gain1='gainEle[0]==1'
+gain2='gainEle[0]==2'
 
-low_list=[0,50,100]#,150,200,250,300,350,400,450,500,550,600,650,700]
+#low_list=[50,100,150,200,250]#,300,350,400,450,500,550,600,650,700]
+low_list=[0,50,100]#,300,350,400,450,500,550,600,650,700]
 pt_list=[]
 pt_label=[]
 step=50

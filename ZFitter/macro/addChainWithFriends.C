@@ -31,6 +31,7 @@ void ReassociateFriends(TFile *f, TChain *chain){
     for(std::vector<TChain*>::const_iterator chain_itr = newFriendVec.begin();
     chain_itr!=newFriendVec.end();
     chain_itr++){
+      cout<<"Adding Again the Friend Chain"<<endl;
       TChain *friendChain=*chain_itr;
       chain->AddFriend(friendChain);
     }

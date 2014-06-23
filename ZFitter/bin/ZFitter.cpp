@@ -1107,8 +1107,9 @@ int main(int argc, char **argv) {
       //Make_Histos(data,"histograms_data","endcap_goodR9",invMass_var,energyBranchName); 
       //Make_Histos(data,"histograms_data","barrel_badR9",invMass_var,energyBranchName);
       //Make_Histos(data,"histograms_data","endcap_badR9",invMass_var,energyBranchName); 
-      Make_Histos(data,"histograms_data","barrel",invMass_var,energyBranchName);
-      Make_Histos(data,"histograms_data","endcap",invMass_var,energyBranchName); 
+      //Make_Histos(data,"histograms_data","barrel",invMass_var,energyBranchName);
+      //Make_Histos(data,"histograms_data","endcap",invMass_var,energyBranchName); 
+      //data->SaveAs("tmp/my_data.root");//non associa bene i friend
     }
 
     if(MC!="data_only"){
