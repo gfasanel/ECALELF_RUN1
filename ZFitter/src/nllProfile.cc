@@ -96,7 +96,7 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
 		  					 
   // Stored variables			 
   //		  					 
-  Float_t         energyEle[2];		 
+  //Float_t         energyEle[2];		 
   Float_t         etaEle[2];	     	 
   Float_t         etaSCEle[2];           
   Float_t         phiEle[2];	     	 
@@ -118,8 +118,8 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
 
   //List of branches:
   TBranch *b_eventNumber;	  	  		    				       
-  TBranch *b_weight;		  
-  TBranch *b_energyEle;		  
+  //TBranch *b_weight;		  
+  //TBranch *b_energyEle;		  
   TBranch *b_etaEle;	     	  
   TBranch *b_etaSCEle;            
   TBranch *b_phiEle;	     	  
@@ -296,7 +296,7 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
 
   for(Long64_t jentry=0; jentry < entries; jentry++){
   //for(Long64_t jentry=0; jentry < 20; jentry++){//check
-    Long64_t entryNumber= chain->GetEntryNumber(jentry);
+    //    Long64_t entryNumber= chain->GetEntryNumber(jentry);
     if(!(jentry%2000000)){
       cout<<"Processing "<<jentry<<"/"<<entries<<endl;
     }

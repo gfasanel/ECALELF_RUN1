@@ -14,6 +14,7 @@ baseDir=test
 updateOnly="--updateOnly --fit_type_value=1" # --profileOnly --initFile=init.txt"
 #updateOnly=""
 ###########################################################
+#lui li fa in maniera iterativa, a me per esempio ne basta uno
 regionFileStep1=data/regions/scaleStep1.dat
 
 regionFileStep2EB=data/regions/scaleStep2smearing_1.dat
@@ -239,7 +240,7 @@ if [ "${extension}" == "weight" ];then
 fi
 
 
-
+#step 1 non mi interessa
 if [ -n "${STEP1}" ];then
     # runNumber x eta with fitMethod
     regionFile=data/regions/scaleStep1.dat
@@ -356,7 +357,7 @@ if [ -n "${STEP2FIT}" ];then
 fi
 
 
-
+#usare questo
 if [ -n "${STEP2}" ];then
     #eta x R9 with smearing method
 

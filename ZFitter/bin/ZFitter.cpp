@@ -523,17 +523,17 @@ int main(int argc, char **argv) {
       continue;
     }
     if(MC=="Powheg"){
-      if(tag.Contains('s1') || tag.Contains('s3')){//Depending on the MC you want
+      if(tag.Contains("s1") || tag.Contains("s3")){//Depending on the MC you want
 	chainFileList.ignore(1000,'\n');
 	continue;
       }
     }else if(MC=="MadGraph"){
-      if(tag.Contains('s2') || tag.Contains('s3')){//Depending on the MC you want
+      if(tag.Contains("s2") || tag.Contains("s3")){//Depending on the MC you want
 	chainFileList.ignore(1000,'\n');
 	continue;
       }
     }else if(MC=="Sherpa"){
-      if(tag.Contains('s1') || tag.Contains('s2')){//Depending on the MC you want
+      if(tag.Contains("s1") || tag.Contains("s2")){//Depending on the MC you want
 	chainFileList.ignore(1000,'\n');
 	continue;
       }

@@ -59,8 +59,8 @@ public:
   int categoryIndex1, categoryIndex2;
   TString categoryName1;
   TString categoryName2;
-  RooArgSet pars1;
-  RooArgSet pars2;
+  RooArgSet pars1;//fit parameters
+  RooArgSet pars2;//fit parameters
 
   // old values
   double scale1,constant1, alpha1;
@@ -76,7 +76,7 @@ public:
   TH1F *hist_mc;
   TH1F *smearHist_mc;
 
-  bool active;
+  bool active;//possibilita di escludere categorie dal calcolo della likelihood
   unsigned int nSmearToy;
   unsigned int nLLtoy;
 
@@ -140,7 +140,7 @@ public:
     importer._scaleToy=scaleToy;
     importer._constTermToy=constTermToy;
   }
-  inline void SetEleID(TString value){importer.SetEleID(value);};
+  inline void SetEleID(TString value){importer.SetEleID(value);};//
   inline void SetCommonCut(TString cut){importer.SetCommonCut(cut);};
 
   inline void SetHistBinning(double min, double max, double width){

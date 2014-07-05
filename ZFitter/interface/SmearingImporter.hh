@@ -26,8 +26,10 @@
 // e gli viene assegnato l'indice del taglio/regione
 
 class SmearingImporter{
+  //shervin dice di farla classe templata con Zeeevents and EoverPevents
   typedef zee_events_t event_cache_t;
   typedef std::vector<event_cache_t> regions_cache_t;
+  //define a vector event for each category
 public:
   // constructor
   inline SmearingImporter(){};
@@ -37,7 +39,7 @@ public:
   inline void SetRegionList(std::vector<TString> regionList){ _regionList=regionList;};
   regions_cache_t GetCache(TChain *_chain, bool isMC, bool odd, Long64_t nEvents=0, bool isToy=false, bool externToy=true);
   regions_cache_t GetCacheToy(Long64_t nEvents, bool isMC);
-
+  //lui si fa i suoi vettori con la categoria definita e raggruppa gli eventi
   inline void SetPuWeight(bool value){_usePUweight=value;};
   inline void SetMCWeight(bool value){_useMCweight=value;};
   inline void SetR9Weight(bool value){_useR9weight=value;};
@@ -79,6 +81,7 @@ private:
   ElectronCategory_class cutter;
 
   void Import(TTree *chain, regions_cache_t& cache, TString oddString, bool isMC, Long64_t nEvents=0, bool isToy=false, bool externToy=true);
+  void Import(TTree *chain, regions_cache_t& cache, TString oddString, bool isMC, std::string event_type, Long64_t nEvents=0, bool isToy=false, bool externToy=true);
   void ImportToy(Long64_t nEvents, event_cache_t& eventCache, bool isMC);
   
 };

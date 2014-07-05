@@ -4,7 +4,7 @@ checkPlot(){
   invMass_var="invMass_SC_regrCorrSemiParV5_ele";
   string Ecal_region_description="";//just barrel and endcap
   //Ecal_region_description="_goodR9";
-  //Ecal_region_description="_badR9";
+  Ecal_region_description="_badR9";
   
   //DataMC(invMass_var,"variable",logscale y,2 boh,"Ecal_region","xlabel","ylabel","zlabel",yvalue for profile,rebin,nxbins,nybins,limit_axis,xmin.xmax,ymin,ymax);
   DataMC(invMass_var,"InvMass",0,1,"endcap"+Ecal_region_description,"m_{ee} [GeV]","Events","",50,0,2,2,1,60,120);

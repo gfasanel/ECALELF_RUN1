@@ -234,7 +234,7 @@ void DataMC(string dir,string histo_name, int logy_y,int option_dim,string ECAL_
   sherpa->SetFillStyle(3018);
   powheg->Draw("hist");
   madgraph->Draw("histsame");
-  sherpa->Draw("histsame");
+  //sherpa->Draw("histsame");
 
   data->SetMarkerStyle(20);
   data->Draw("epsame");  
@@ -245,7 +245,7 @@ void DataMC(string dir,string histo_name, int logy_y,int option_dim,string ECAL_
   leg->AddEntry(data,"Data");
   leg->AddEntry(powheg,"Powheg");
   leg->AddEntry(madgraph,"MadGraph");
-  leg->AddEntry(sherpa,"Sherpa");
+  //leg->AddEntry(sherpa,"Sherpa");
   leg->Draw("same");
 
   //Plotting Ratio
@@ -275,7 +275,7 @@ void DataMC(string dir,string histo_name, int logy_y,int option_dim,string ECAL_
   data_copy_3->Divide(sherpa);
   data_copy_3->SetLineColor(kGreen);
   data_copy_3->SetMarkerColor(kGreen);
-  data_copy_3->Draw("same");
+  //data_copy_3->Draw("same");
 
 
   //Draw line at 1
