@@ -6,6 +6,7 @@
 #include <TDirectory.h>
 //#define DEBUG
 #include <TStopwatch.h>
+//ZeeEvent and EopEvent are included in SmearingImporter.hh
 #define SELECTOR
 #define FIXEDSMEARINGS
 SmearingImporter::SmearingImporter(std::vector<TString> regionList, TString energyBranchName, TString commonCut):
@@ -416,8 +417,9 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
 }
 
 
-//Import overloaded for Eop
-void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddString, bool isMC, std::string event_type, Long64_t nEvents, bool isToy, bool externToy){
+//Import overloaded for Eop => overloaded with event_type (for the moment)
+//void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddString, bool isMC, std::string event_type, Long64_t nEvents, bool isToy, bool externToy){
+void SmearingImporter::Import(TTree *chain, std::vector<eop_events_t>& cache, TString oddString, bool isMC, std::string event_type, Long64_t nEvents, bool isToy, bool externToy){
 
   TRandom3 gen(0);
   if(!isMC) gen.SetSeed(12345);
@@ -533,7 +535,7 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
   chain->LoadTree(chain->GetEntryNumber(0));
   Long64_t treenumber=-1;
 
-  std::vector< TTreeFormula* > catSelectors;//different from Zee event type
+  //std::vector< TTreeFormula* > catSelectors;//different from Zee event type: I need just one Formula for E/p
 
 
   for(Long64_t jentry=0; jentry < entries; jentry++){
@@ -556,19 +558,22 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
     if(weight>3) continue;
 
     if (hasSmearerCat==false && chain->GetTreeNumber() != treenumber) {
-      treenumber = chain->GetTreeNumber();
-      for(std::vector< TTreeFormula*> >::const_iterator catSelector_itr = catSelectors.begin();
-	  catSelector_itr != catSelectors.end();
-	  catSelector_itr++){
+      //SERVE??
+      //treenumber = chain->GetTreeNumber();
+      //here
+      //for(std::vector< TTreeFormula*>::const_iterator catSelector_itr = catSelectors.begin();
+      //  catSelector_itr != catSelectors.end();
+      //  catSelector_itr++){
 	
-	catSelector_itr->first->UpdateFormulaLeaves();
-	if(catSelector_itr->second!=NULL)       catSelector_itr->second->UpdateFormulaLeaves();//che fa??
-      }
+      //catSelector_itr->first->UpdateFormulaLeaves();
+      //if(catSelector_itr->second!=NULL)       catSelector_itr->second->UpdateFormulaLeaves();//che fa??
+      //}
     }
 
     int evIndex=-1;
     bool _swap=false;
     if(!hasSmearerCat){
+      //Ripulire se non serve
     //for(std::vector< std::pair<TTreeFormula*, TTreeFormula*> >::const_iterator catSelector_itr = catSelectors.begin();
     //  catSelector_itr != catSelectors.end();
     //  catSelector_itr++){
@@ -600,8 +605,8 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
     // 	std::cout << "[INFO] Category = " << evIndex << std::endl;
     //       }
     
-    float t1=TMath::Exp(-etaEle[0]);
-    float t1q = t1*t1;
+    //float t1=TMath::Exp(-etaEle[0]);
+    //float t1q = t1*t1;
 
     
     if(isMC && hasSmearEle){
@@ -611,8 +616,9 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
 
     //------------------------------
     event.energy_ele1 = energyEle[0] * corrEle_[0] * smearEle_[0];
-//event.EoverP=
-    //event.invMass= sqrt(2 * event.energy_ele1 * event.energy_ele2 *
+    event.EoverP=event.energy_ele1/event.momentum_ele1;
+    
+//event.invMass= sqrt(2 * event.energy_ele1 * event.energy_ele2 *
     //		(1-((1-t1q)*(1-t2q)+4*t1*t2*cos(phiEle[0]-phiEle[1]))/((1+t1q)*(1+t2q)))
     //		);
     if(_isSmearingEt){
@@ -684,16 +690,16 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
 #ifdef FIXEDSMEARINGS
     if(isMC){
       event.smearings_ele1 = new float[NSMEARTOYLIM];
-      event.smearings_ele2 = new float[NSMEARTOYLIM];
+      //event.smearings_ele2 = new float[NSMEARTOYLIM];
       for(int i=0; i < NSMEARTOYLIM; i++){
 	event.smearings_ele1[i] = (float) gen.Gaus(0,1);
-	event.smearings_ele2[i] = (float) gen.Gaus(0,1);
+	//event.smearings_ele2[i] = (float) gen.Gaus(0,1);
       }
     }else{
       event.smearings_ele1 = new float[1];
-      event.smearings_ele2 = new float[1];
+      //event.smearings_ele2 = new float[1];
       event.smearings_ele1[0] = (float) gen.Gaus(0,1);
-      event.smearings_ele2[0] = (float) gen.Gaus(0,1);
+      //event.smearings_ele2[0] = (float) gen.Gaus(0,1);
     }	
 #endif
     includedEvents++;
