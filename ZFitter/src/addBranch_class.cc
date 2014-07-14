@@ -4,6 +4,7 @@
 #include <TLorentzVector.h>
 #include <iostream> 
 
+#define EopCOUT
 //#define DEBUG
 //#define NOFRIEND
 
@@ -19,10 +20,13 @@ addBranch_class::~addBranch_class(void){
    *  \param treename name of the new tree (not important)
    *  \param BranchName invMassSigma or iSMEle (important, define which new branch you want)
    */
-TTree *addBranch_class::AddBranch(TChain* originalChain, TString treename, TString BranchName, bool fastLoop, bool isMC){
+TTree *addBranch_class::AddBranch(TChain* originalChain, TString treename, TString BranchName,bool isEoP, bool fastLoop, bool isMC){
   if(BranchName.Contains("invMassSigma")) return AddBranch_invMassSigma(originalChain, treename, BranchName, fastLoop, isMC);
   if(BranchName.CompareTo("iSM")==0)       return AddBranch_iSM(originalChain, treename, BranchName, fastLoop);
-  if(BranchName.CompareTo("smearerCat")==0)       return AddBranch_smearerCat(originalChain, treename, isMC);
+  if(BranchName.CompareTo("smearerCat")==0){
+    //If you want to categorize events
+    return AddBranch_smearerCat(originalChain, treename, isEoP, isMC);
+  }
   if(BranchName.Contains("ZPt"))   return AddBranch_ZPt(originalChain, treename, BranchName.ReplaceAll("ZPt_",""), fastLoop);
   std::cerr << "[ERROR] Request to add branch " << BranchName << " but not defined" << std::endl;
   return NULL;
@@ -310,11 +314,104 @@ TTree* addBranch_class::AddBranch_iSM(TChain* originalChain, TString treename, T
   return newtree;
 }
 
+// branch with the category index
+TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString treename, bool isEoP, bool isMC){
+  #ifdef EopCOUT
+  cout<<"Inside addBranch_smearerCat method of addBranch_class.cc"<<endl;
+  #endif
+  
+  if(isEoP==true){
+    ElectronCategory_class cutter;
+    if(originalChain->GetBranch("scaleEle")!=NULL){
+      cutter._corrEle=true;
+      std::cout << "[INFO] Activating scaleEle for smearerCat" << std::endl;
+      
+    }
+    TString oddString="";
+    
+    //setting the new tree
+    TTree *newtree = new TTree(treename, treename);
+    Int_t  smearerCat[2];//basta 1 ?
+    Char_t cat1[10];// a cosa serve?
+    sprintf(cat1,"XX");
+    newtree->Branch("smearerCat", smearerCat, "smearerCat[2]/I");
+    newtree->Branch("catName", cat1, "catName/C");
+    //  newtree->Branch("catName2", cat2, "catName2/C");
+    
+    /// \todo disable branches using cutter
+    originalChain->SetBranchStatus("*",0);
+    
+    std::vector<TTreeFormula*> catSelectors;
+    for(std::vector<TString>::const_iterator region_ele1_itr = _regionList.begin();
+	region_ele1_itr != _regionList.end();
+	region_ele1_itr++){
+      
+      // \todo activating branches // not efficient in this loop
+      std::set<TString> branchNames = cutter.GetBranchNameNtuple(*region_ele1_itr);
+      for(std::set<TString>::const_iterator itr = branchNames.begin();
+	itr != branchNames.end(); itr++){
+	originalChain->SetBranchStatus(*itr, 1);
+      }
+      if(    cutter._corrEle==true) originalChain->SetBranchStatus("scaleEle", 1);
+      
+      TString region=*region_ele1_itr;
+      region.ReplaceAll(_commonCut,""); //remove the common Cut!
+      TTreeFormula *selector = new TTreeFormula("selector-"+(region), cutter.GetCut(region+oddString, isMC), originalChain);
+      catSelectors.push_back(selector);
+      //selector->Print();
+      //std::cout << cutter.GetCut(region+oddString, isMC) << std::endl;
+      //exit(0);
+    }//end of loop on region_ele1_itr
 
 
-// branch with the smearing category index
-TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString treename, bool isMC){
+  Long64_t entries = originalChain->GetEntries();
+  originalChain->LoadTree(originalChain->GetEntryNumber(0));
+  Long64_t treenumber=-1;
+  
+  std::cout << "[STATUS] Get smearerCat for tree: " << originalChain->GetTitle() 
+	    << "\t" << "with " << entries << " entries" << std::endl;
+  std::cerr << "[00%]";
 
+  for(Long64_t jentry=0; jentry < entries; jentry++){
+    originalChain->GetEntry(jentry);
+    if (originalChain->GetTreeNumber() != treenumber) {
+      treenumber = originalChain->GetTreeNumber();
+      for(std::vector<TTreeFormula*>::const_iterator catSelector_itr = catSelectors.begin();
+	  catSelector_itr != catSelectors.end();
+	  catSelector_itr++){
+	
+	catSelector_itr->first->UpdateFormulaLeaves();
+	if(catSelector_itr->second!=NULL)       catSelector_itr->second->UpdateFormulaLeaves();
+      }
+    }
+    //cosa fa qui??
+    int evIndex=-1;
+    bool _swap=false;
+    for(std::vector<TTreeFormula*>::const_iterator catSelector_itr = catSelectors.begin();
+	catSelector_itr != catSelectors.end() && evIndex<0;
+	catSelector_itr++){
+      _swap=false;
+      TTreeFormula *sel1 = catSelector_itr->first;
+      //TTreeFormula *sel2 = catSelector_itr->second;
+      //if(sel1==NULL) continue; // is it possible?
+      if(sel1->EvalInstance()==false) continue;
+      evIndex=catSelector_itr-catSelectors.begin();
+    }
+    
+    smearerCat[0]=evIndex;
+    smearerCat[1]=1; //for the moment
+    //smearerCat[1]=_swap ? 1 : 0;
+    newtree->Fill();
+    if(jentry%(entries/100)==0) std::cerr << "\b\b\b\b" << std::setw(2) << jentry/(entries/100) << "%]";
+  }
+  std::cout << std::endl;
+
+  //if(fastLoop) 
+  originalChain->SetBranchStatus("*",1);
+  originalChain->ResetBranchAddresses();
+  return newtree;
+  /*end of if EoP==true*/ 
+  }else{ //EoP==false
   ElectronCategory_class cutter;
   if(originalChain->GetBranch("scaleEle")!=NULL){
     cutter._corrEle=true;
@@ -378,10 +475,10 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
 	//selector1->Print();
 	//	selector2->Print();
 	//exit(0);
-      } 
+      }//it closes the "else"
 	
-    }
-  }
+    }//end of loop on region_ele2_itr 
+  }//end of loop on region_ele1_itr
 
 
   Long64_t entries = originalChain->GetEntries();
@@ -436,7 +533,8 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
   originalChain->SetBranchStatus("*",1);
   originalChain->ResetBranchAddresses();
   return newtree;
-}
+  }
+}//it closes addBranch_smearerCat
 
 
 

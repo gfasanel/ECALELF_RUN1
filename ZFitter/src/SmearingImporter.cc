@@ -418,8 +418,7 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
 
 
 //Import overloaded for Eop => overloaded with event_type (for the moment)
-//void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddString, bool isMC, std::string event_type, Long64_t nEvents, bool isToy, bool externToy){
-void SmearingImporter::Import(TTree *chain, std::vector<eop_events_t>& cache, TString oddString, bool isMC, std::string event_type, Long64_t nEvents, bool isToy, bool externToy){
+void SmearingImporter::Import(TTree *chain, std::vector<eop_events_t>& cache, TString oddString, bool isMC, Long64_t nEvents, bool isToy, bool externToy){
 
   TRandom3 gen(0);
   if(!isMC) gen.SetSeed(12345);

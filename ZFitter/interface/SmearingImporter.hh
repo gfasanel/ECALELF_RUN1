@@ -82,7 +82,7 @@ private:
   ElectronCategory_class cutter;
 
   void Import(TTree *chain, regions_cache_t& cache, TString oddString, bool isMC, Long64_t nEvents=0, bool isToy=false, bool externToy=true);
-  void Import(TTree *chain, std::vector<eop_events_t>& cache, TString oddString, bool isMC, std::string event_type, Long64_t nEvents=0, bool isToy=false, bool externToy=true);
+  void Import(TTree *chain, std::vector<eop_events_t>& cache, TString oddString, bool isMC, Long64_t nEvents=0, bool isToy=false, bool externToy=true);
   void ImportToy(Long64_t nEvents, event_cache_t& eventCache, bool isMC);
   
 };

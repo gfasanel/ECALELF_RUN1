@@ -331,8 +331,8 @@ int main(int argc, char **argv) {
     ("useZPtweight", "use ZPt weights")
     ("useFSRweight", "activate the FSR weight in MC")
     ("useWEAKweight", "activate the WEAK interference weight in MC")
-    ("saveRootMacro","")
-    ("doHistos","")
+    ("saveRootMacro","create root files for data and MCs and friend trees (pile-up, smearing and scale factors")
+    ("doHistos","create histos of meaningful variables for data and MCs")
     //
     ("selection", po::value<string>(&selection)->default_value("loose"),"")
     ("commonCut", po::value<string>(&commonCut)->default_value("Et_25-trigger-noPF"),"")
@@ -364,7 +364,7 @@ int main(int argc, char **argv) {
     ("updateOnly",  "do not fit data if fit exists")
     ;;
   smearerOption.add_options()
-    ("smearerFit",  "call the smearing")
+    ("smearerFit",  "call the MC smearing. The smeared MC will be used to fit data")
     ("smearerType", po::value<string>(&minimType)->default_value("profile"), "minimization algo")
     ("onlyDiagonal","if want to use only diagonal categories")
     ("autoBin", "")
@@ -884,15 +884,19 @@ int main(int argc, char **argv) {
 
 
   addBranch_class newBrancher;
-  newBrancher._commonCut=commonCut.c_str();
-  newBrancher._regionList=categories;
+  newBrancher._commonCut=commonCut.c_str();//default is Et-25-trigger-noPF
+  newBrancher._regionList=categories;//defined from the regionsFile.dat
 
+  //branchList is a vector<string>: it contains the names of the new branches you want to create
+  //it is passed by the option --addBranch=smearerCat
   for( std::vector<string>::const_iterator branch_itr = branchList.begin();
        branch_itr != branchList.end();
-       branch_itr++){
+       branch_itr++){//Here the loop over the branches starts
+
     UpdateFriends(tagChainMap, regionsFileNameTag);
     
     TString treeName=*branch_itr;
+    //treeName takes the name of the branch
     TString t;
     if(treeName=="smearerCat_s"){
       treeName.ReplaceAll("_s","");
@@ -904,6 +908,7 @@ int main(int argc, char **argv) {
     }
     TString branchName=treeName;
     std::cout << "#### --> " << treeName << "\t" << t << "\t" << *branch_itr <<std::endl;
+    
     if(branchName=="smearerCat") treeName+="_"+regionsFileNameTag;
 
     if(treeName.Contains("invMassSigma")){
@@ -912,17 +917,18 @@ int main(int argc, char **argv) {
 
     for(tag_chain_map_t::const_iterator tag_chain_itr=tagChainMap.begin();
 	tag_chain_itr!=tagChainMap.end();
-	tag_chain_itr++){
+	tag_chain_itr++){//for over ntuple: it creates new branchs, with categorization infos
       if((tag_chain_itr->first.CompareTo("s")==0 || tag_chain_itr->first.CompareTo("d")==0)) continue; //only data
       if(tag_chain_itr->second.count(treeName)!=0) continue; //skip if already present
       if(t!="" && !tag_chain_itr->first.Contains(t)) continue;
       TChain *ch = (tag_chain_itr->second.find("selected"))->second;
 
-      //data
+      //data or MC
       std::cout <<"[STATUS] Adding branch " << branchName << " to " << tag_chain_itr->first <<std::endl;
       TString filename="tmp/"+treeName+"_"+tag_chain_itr->first+"-"+chainFileListTag+".root";
 
-      TTree *newTree = newBrancher.AddBranch(ch,treeName, branchName,true,tag_chain_itr->first.Contains("s"));
+      //Here categorization starts; the first bool says if isEoP
+      TTree *newTree = newBrancher.AddBranch(ch,treeName, branchName,false,true,tag_chain_itr->first.Contains("s"));
       if(newTree==NULL){
 	std::cerr << "[ERROR] New tree for branch " << treeName << " is NULL" << std::endl;
 	return 1;
@@ -944,7 +950,7 @@ int main(int argc, char **argv) {
       chain_itr->second->SetTitle(tag_chain_itr->first);
       chain_itr->second->Add(filename);
     } //end of sample loop
-  } //end of branches loop
+  }//end of branches loop
 
   //(tagChainMap["s"])["selected"]->GetEntries();
   UpdateFriends(tagChainMap, regionsFileNameTag);
@@ -1075,6 +1081,7 @@ int main(int argc, char **argv) {
   TString filename="tmp/tmpFile-"; filename+=randomInt;filename+=".root";
   TFile *tmpFile = new TFile(filename,"recreate");
   tmpFile->cd();
+  //smearer definition
   RooSmearer smearer("smearer",(tagChainMap["d"])["selected"], (tagChainMap["s"])["selected"], NULL, 
 		     categories,
 		     args_vec, args, energyBranchName);
@@ -1122,7 +1129,7 @@ int main(int argc, char **argv) {
     data= (tagChainMap["d"])["selected"];
     mc  = (tagChainMap["s"])["selected"];
   }
-  //Chain taken: now you can loop over the ntuples
+  //Chain taken, with friend branches correctly loaded: now you can loop over the ntuples and make histos
 
   if(vm.count("doHistos")){
     //looping over ntuples:
@@ -1149,6 +1156,10 @@ int main(int argc, char **argv) {
     //just do the histos and exit, do not go further on
   }
 
+  //=====================================================================//
+
+  //Fit and scale factors computation
+  //changes for Eop
   ZFit_class fitter( data, mc, NULL, 
 		     invMass_var.c_str(), invMass_min, invMass_max, invMass_binWidth); 
 
@@ -1198,8 +1209,9 @@ int main(int argc, char **argv) {
   }
 
   myClock.Reset();
-  if(vm.count("smearerFit")){
 
+  if(vm.count("smearerFit")){//changes needed for Eop
+    //smearer is an object of class RooSmearer
 	smearer.SetHistBinning(80,100,invMass_binWidth); // to do before Init
 	if(vm.count("runToy")){
 	  smearer.SetPuWeight(false);
@@ -1463,7 +1475,8 @@ int main(int argc, char **argv) {
 	  fOutProfile->Close();
 	  
 	}
-  }
+  }// if(vm.count("smearerFit"))
+
   tmpFile->Close();
   globalClock.Stop();
   std::cout << "[INFO] Total elapsed time: "; globalClock.Print(); 
