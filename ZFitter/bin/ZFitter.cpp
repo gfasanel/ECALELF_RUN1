@@ -928,7 +928,7 @@ int main(int argc, char **argv) {
       TString filename="tmp/"+treeName+"_"+tag_chain_itr->first+"-"+chainFileListTag+".root";
 
       //Here categorization starts; the first bool says if isEoP
-      TTree *newTree = newBrancher.AddBranch(ch,treeName, branchName,false,true,tag_chain_itr->first.Contains("s"));
+      TTree *newTree = newBrancher.AddBranch(ch,treeName, branchName,true,true,tag_chain_itr->first.Contains("s"));
       if(newTree==NULL){
 	std::cerr << "[ERROR] New tree for branch " << treeName << " is NULL" << std::endl;
 	return 1;

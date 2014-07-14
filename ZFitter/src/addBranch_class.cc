@@ -359,7 +359,7 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
       TTreeFormula *selector = new TTreeFormula("selector-"+(region), cutter.GetCut(region+oddString, isMC), originalChain);
       catSelectors.push_back(selector);
       //selector->Print();
-      //std::cout << cutter.GetCut(region+oddString, isMC) << std::endl;
+      std::cout << cutter.GetCut(region+oddString, isMC) << std::endl;
       //exit(0);
     }//end of loop on region_ele1_itr
 
@@ -379,21 +379,16 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
       for(std::vector<TTreeFormula*>::const_iterator catSelector_itr = catSelectors.begin();
 	  catSelector_itr != catSelectors.end();
 	  catSelector_itr++){
-	
-	catSelector_itr->first->UpdateFormulaLeaves();
-	if(catSelector_itr->second!=NULL)       catSelector_itr->second->UpdateFormulaLeaves();
+	(*catSelector_itr)->UpdateFormulaLeaves();//(*catSelector_itr) takes the content of the pointer
       }
     }
-    //cosa fa qui??
+    //Categorization
+    //evIndex specifies the category index
     int evIndex=-1;
-    bool _swap=false;
     for(std::vector<TTreeFormula*>::const_iterator catSelector_itr = catSelectors.begin();
 	catSelector_itr != catSelectors.end() && evIndex<0;
 	catSelector_itr++){
-      _swap=false;
-      TTreeFormula *sel1 = catSelector_itr->first;
-      //TTreeFormula *sel2 = catSelector_itr->second;
-      //if(sel1==NULL) continue; // is it possible?
+      TTreeFormula *sel1 = *catSelector_itr;
       if(sel1->EvalInstance()==false) continue;
       evIndex=catSelector_itr-catSelectors.begin();
     }
