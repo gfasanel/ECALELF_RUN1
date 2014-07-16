@@ -417,7 +417,7 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
 }
 
 
-//Import overloaded for Eop => overloaded with event_type (for the moment)
+//Import overloaded for Eop
 void SmearingImporter::Import(TTree *chain, std::vector<eop_events_t>& cache, TString oddString, bool isMC, Long64_t nEvents, bool isToy, bool externToy){
 
   TRandom3 gen(0);
@@ -801,6 +801,97 @@ SmearingImporter::regions_cache_t SmearingImporter::GetCache(TChain *_chain, boo
 	region_ele2_itr != _regionList.end();
 	region_ele2_itr++){
       std::cout << "[INFO] Category " << index << " " <<  *region_ele1_itr << *region_ele2_itr
+		<< " filled with " << cache[index].size() << " entries" 
+		<< std::endl;
+      index++;
+    }
+  }
+#endif
+  myClock.Stop();
+  myClock.Print();
+  return cache;
+}
+
+SmearingImporter::eop_events_cache_t SmearingImporter::GetCache(bool isEoP, TChain *_chain, bool isMC, bool odd, Long64_t nEvents, bool isToy, bool externToy){
+
+  TString eleID_="eleID_"+_eleID;
+
+  TString oddString;
+  if(odd) oddString+="-odd";
+  std::vector<eop_events_t> cache;
+  TStopwatch myClock;
+  myClock.Start();
+  _chain->GetEntry(0);
+
+  _chain->SetBranchStatus("*", 0);
+
+  _chain->SetBranchStatus("etaEle", 1);
+  _chain->SetBranchStatus("phiEle", 1);
+  _chain->SetBranchStatus(_energyBranchName, 1);
+  if(isToy) _chain->SetBranchStatus("eventNumber",1);
+  //  std::cout << _chain->GetBranchStatus("seedXSCEle") <<  std::endl;
+  //  std::cout << _chain->GetBranchStatus("etaEle") <<  std::endl;
+
+  if(_chain->GetBranch("scaleEle")!=NULL){
+    std::cout << "[STATUS] Activating branch scaleEle" << std::endl;
+    _chain->SetBranchStatus("scaleEle", 1);
+    cutter._corrEle=true;
+  }
+
+  if(_chain->GetBranch("smearEle")!=NULL){
+    std::cout << "[STATUS] Activating branch smearEle" << std::endl;
+    _chain->SetBranchStatus("smearEle", 1);
+  } 
+
+ 
+  if(_chain->GetBranch("r9Weight")!=NULL)  _chain->SetBranchStatus("r9Weight", 1);
+  if(_chain->GetBranch("puWeight")!=NULL)  _chain->SetBranchStatus("puWeight", 1);
+  if(_chain->GetBranch("ptWeight")!=NULL)  _chain->SetBranchStatus("ptWeight", 1);
+  if(_chain->GetBranch("mcGenWeight")!=NULL)  _chain->SetBranchStatus("mcGenWeight", 1);
+  if(_chain->GetBranch("smearerCat")!=NULL){
+    //std::cout << "[STATUS] Activating branch smearerCat" << std::endl;
+    _chain->SetBranchStatus("smearerCat", 1);
+  }
+
+
+
+  for(std::vector<TString>::const_iterator region_ele1_itr = _regionList.begin();
+      region_ele1_itr != _regionList.end();
+      region_ele1_itr++){
+    std::set<TString> branchNames = cutter.GetBranchNameNtuple(_commonCut+"-"+eleID_+"-"+*region_ele1_itr);
+    for(std::set<TString>::const_iterator itr = branchNames.begin();
+	itr != branchNames.end(); itr++){
+      _chain->SetBranchStatus(*itr, "1");
+    }
+  }
+ 
+  TString evListName="evList_";
+  evListName+=_chain->GetTitle();
+  evListName+="_all";
+  TEntryList *oldList = _chain->GetEntryList();
+  if(oldList==NULL){
+    std::cout << "[STATUS] Setting entry list: " << evListName << std::endl;
+    _chain->Draw(">>"+evListName, cutter.GetCut(_commonCut+"-"+eleID_,isMC), "entrylist");
+    //_chain->Draw(">>"+evListName, "", "entrylist");
+    TEntryList *elist_all = (TEntryList*)gDirectory->Get(evListName);
+    //  elist_all->SetBit(!kCanDelete);
+    _chain->SetEntryList(elist_all);
+  }
+  for(std::vector<TString>::const_iterator region_ele1_itr = _regionList.begin();
+      region_ele1_itr != _regionList.end();
+      region_ele1_itr++){
+      eop_events_t eventCache;
+      cache.push_back(eventCache);
+  }
+
+//in this case Import takes cache as vector<eop_events>
+  Import(_chain, cache, oddString, isMC, nEvents, isToy, externToy);
+#ifdef DEBUG
+  int index=0;
+  for(std::vector<TString>::const_iterator region_ele1_itr = _regionList.begin();
+      region_ele1_itr != _regionList.end();
+      region_ele1_itr++){
+      std::cout << "[INFO] Category " << index << " " <<  *region_ele1_itr
 		<< " filled with " << cache[index].size() << " entries" 
 		<< std::endl;
       index++;

@@ -27,9 +27,10 @@
 // e gli viene assegnato l'indice del taglio/regione
 
 class SmearingImporter{
-  //shervin dice di farla classe templata con Zeeevents and EoverPevents
+  //shervin dice di farla classe templata con Zeeevents and EoverPevents => Mah
   typedef zee_events_t event_cache_t;
   typedef std::vector<event_cache_t> regions_cache_t;
+  typedef std::vector<eop_events_t> eop_events_cache_t;
   //define a vector event for each category
 public:
   // constructor
@@ -39,6 +40,7 @@ public:
 
   inline void SetRegionList(std::vector<TString> regionList){ _regionList=regionList;};
   regions_cache_t GetCache(TChain *_chain, bool isMC, bool odd, Long64_t nEvents=0, bool isToy=false, bool externToy=true);
+  std::vector<eop_events_t> GetCache(bool isEoP,TChain *_chain, bool isMC, bool odd, Long64_t nEvents=0, bool isToy=false, bool externToy=true);
   regions_cache_t GetCacheToy(Long64_t nEvents, bool isMC);
   //lui si fa i suoi vettori con la categoria definita e raggruppa gli eventi
   inline void SetPuWeight(bool value){_usePUweight=value;};

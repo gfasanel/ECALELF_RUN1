@@ -81,7 +81,66 @@ public:
   unsigned int nLLtoy;
 
   double nll, nllRMS;
-};
+};//it closes Zeecategory
+
+
+class EopCategory {
+public:
+  inline  EopCategory(){
+    hist_data=NULL;
+    smearHist_data=NULL;
+    hist_mc=NULL;
+    smearHist_mc=NULL;
+  };
+
+  inline ~EopCategory(){
+    // do not delete data_events;
+    // do not delete mc_events;
+#ifdef DEBUG
+    if(hist_data!=NULL)      hist_data->Print();
+    if(hist_mc!=NULL)        hist_mc->Print();
+    if(smearHist_mc!=NULL)   smearHist_mc->Print();
+#endif
+//     if(hist_data!=NULL) delete hist_data;
+//     //    if(smearHist_data!=NULL) delete smearHist_data;
+//     if(hist_mc!=NULL) delete hist_mc;
+//     if(smearHist_mc!=NULL) delete smearHist_mc;
+    data_events=NULL;
+    mc_events=NULL;
+  };
+
+public:
+  //a vector of EopEvent is called eop_events_t: see EopEvent.hh
+  eop_events_t *data_events;
+  eop_events_t *mc_events;
+
+  int categoryIndex1;//just one category needed
+  TString categoryName1;
+  RooArgSet pars1;//fit parameters
+  RooArgSet pars2;//fit parameters
+
+  //2=> 1 per i dati, uno per il MC?
+  // old values
+  double scale1,constant1, alpha1;
+  double scale2,constant2, alpha2;
+
+  int nBins;
+  float EoP_min;
+  float EoP_max;
+  
+  TH1F *hist_data;
+  TH1F *smearHist_data;
+
+  TH1F *hist_mc;
+  TH1F *smearHist_mc;
+
+  bool active;//possibilita di escludere categorie dal calcolo della likelihood
+  unsigned int nSmearToy;
+  unsigned int nLLtoy;
+
+  double nll, nllRMS;
+};//it closes EopCategory
+
 
 // parameters params are provided externally to leave flexibiility in
 // their definition and dependencies (can be  RooRealVar or
@@ -121,7 +180,10 @@ public:
 
   // Settting options
   void AutoNSmear(ZeeCategory& category);
+  void AutoNSmear(EopCategory& category);
   void AutoNBins(ZeeCategory& category);
+  void AutoNBins(EopCategory& category);
+
 
   // interface functions to SmearingImporter
   inline void SetPuWeight(bool usePuReweight){importer.SetPuWeight(usePuReweight);};
@@ -143,16 +205,24 @@ public:
   inline void SetEleID(TString value){importer.SetEleID(value);};//
   inline void SetCommonCut(TString cut){importer.SetCommonCut(cut);};
 
-  inline void SetHistBinning(double min, double max, double width){
+  inline void SetHistBinning(double min, double max, double width, bool isEoP=false){
+    if(isEoP==false){
     invMass_min_=min;
     invMass_max_=max;
     invMass_bin_=width;
     nBins_= (int) ((invMass_max_ - invMass_min_)/invMass_bin_);
+    }else{
+    EoP_min_=min;
+    EoP_max_=max;
+    EoP_bin_=width;
+    nBins_= (int) ((EoP_max_ - EoP_min_)/EoP_bin_);
+    }
     return;
   }
 
   /// Initialize the categories: import from the tree
   void Init(TString commonCut, TString eleID, Long64_t nEvents=0, bool mcToy=false, bool externToy=true,TString initFile="");
+  //void Init(bool isEoP,TString commonCut, TString eleID, Long64_t nEvents=0, bool mcToy=false, bool externToy=true,TString initFile="");
   //  TH1F *GetSmearedHisto(TString categoryName, 
   //			bool smearEnergy=false, TString histoName="") const;
   //  TH1F *GetSmearedHisto(int categoryIndex,
@@ -185,6 +255,11 @@ private:
   SmearingImporter importer;
   std::vector<zee_events_t> mc_events_cache;
   std::vector<zee_events_t> data_events_cache;
+  //To do? => make a basic class Event.hh and ZeeEvent, EopEvent inheriting from it
+  //This way you can have vector<events_t> and then specify if Zee or Eop
+  std::vector<eop_events_t> mc_eop_events_cache;
+  std::vector<eop_events_t> data_eop_events_cache;
+
   std::vector<RooArgSet> _params_vec; //, _truth_params_vec;
 
   RooSetProxy _paramSet;
@@ -194,6 +269,11 @@ private:
   double invMass_max_;
   double invMass_bin_;
   int nBins_;
+
+  //To do => invMass => FitVar_min etc... generic
+  double EoP_min_;
+  double EoP_max_;
+  double EoP_bin_;
 
   //  unsigned int _deactive_minEvents;
 public:
@@ -222,8 +302,8 @@ public:
 
   RooStats::MarkovChain _markov;
 private:
-  void SetCache(Long64_t nEvents=0, bool cacheToy=false, bool externToy=true);
-  void InitCategories(bool mcToy=false);
+  void SetCache(Long64_t nEvents=0, bool cacheToy=false, bool externToy=true, bool isEoP=false);
+  void InitCategories(bool mcToy=false, bool isEoP=false);
 
   //double smearedEnergy(float ene,float scale,float alpha,float
   //constant) const;
@@ -232,24 +312,37 @@ private:
 		       RooArgSet pars1, RooArgSet pars2, 
 		       TString categoryName1, TString categoryName2, unsigned int nSmearToy,
 		       TH1F *hist) const;
+  void SetSmearedHisto(const eop_events_t& cache, 
+		       RooArgSet pars1, RooArgSet pars2, 
+		       TString categoryName1, unsigned int nSmearToy,
+		       TH1F *hist) const;
 
   void SetHisto(const zee_events_t& cache, TH1F *hist) const;
+  void SetHisto(const eop_events_t& cache, TH1F *hist) const;
   void SetAutoBin(ZeeCategory& category, double min, double max); // set using statistics
+  void SetAutoBin(EopCategory& category, double min, double max); // set using statistics
   void ResetBinning(ZeeCategory& category);
+  void ResetBinning(EopCategory& category);
   bool isCategoryChanged(ZeeCategory& category, bool updateVar=true) const;
+  bool isCategoryChanged(EopCategory& category, bool updateVar=true) const;
   
 
   double getLogLikelihood(TH1F* data, TH1F* prob) const;
   void UpdateCategoryNLL(ZeeCategory& cat, unsigned int nLLtoy, bool multiSmearToy=true);
+  void UpdateCategoryNLL(EopCategory& cat, unsigned int nLLtoy, bool multiSmearToy=true);
   
 
   int Trag_eq(int row, int col, int N) const;
 
 public:
   std::vector<ZeeCategory> ZeeCategories;
+  std::vector<EopCategory> EopCategories;
   typedef std::vector<ZeeCategory> ZeeCategoryCollection;
+  typedef std::vector<EopCategory> EopCategoryCollection;
 
   TH1F *GetSmearedHisto(ZeeCategory& category, bool isMC,
+			bool smearEnergy, bool forceNew=false, bool multiSmearToy=true);
+  TH1F *GetSmearedHisto(EopCategory& category, bool isMC,
 			bool smearEnergy, bool forceNew=false, bool multiSmearToy=true);
 
   
