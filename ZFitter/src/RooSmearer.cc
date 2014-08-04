@@ -7,6 +7,7 @@
 //#define MEM_DEBUG
 #include <TSystem.h>
 #include <TIterator.h>
+#define EopInserting
 
 RooSmearer::~RooSmearer(void){
   
@@ -64,8 +65,13 @@ RooSmearer::RooSmearer(const char *name,  ///< name of the variable
 
 
 void RooSmearer::SetCache(Long64_t nEvents, bool cacheToy, bool externToy, bool isEoP){
+#ifdef EopInserting
+  cout<<"Inside RooSmearer::SetCache"<<endl;
+  cout<<"isEoP "<<isEoP<<endl;
+#endif
+
   std::cout << "------------------------------------------------------------" << std::endl;
-  std::cout << "[STATUS] Importing cache events" << std::endl;
+  std::cout << "[STATUS] Importing cache events through RooSmearer::SetCache" << std::endl;
 
   //importer is a member of RooSmearer class; importer is an object of type SmearingImporter
   if(isEoP==false){
@@ -94,6 +100,12 @@ void RooSmearer::SetCache(Long64_t nEvents, bool cacheToy, bool externToy, bool 
   /*isEoP false*/}else{
     //isEoP true
   if(data_eop_events_cache.empty()){
+    //Memo:
+    //data_eop_events_cache is a vector<eop_events_t> ie vector<vector<EopEvent>>
+#ifdef EopInserting
+    cout<<"Inside RooSmearer::SetCache"<<endl;
+    cout<<"isEoP "<<isEoP<<endl;
+#endif
     if(cacheToy){
       std::cout << "[STATUS] --- Setting toy cache for data" << std::endl;
       data_eop_events_cache = importer.GetCache(isEoP,_signal_chain, false, false, nEvents, true, externToy); //importer.GetCacheToy(nEvents, false);
@@ -115,18 +127,24 @@ void RooSmearer::SetCache(Long64_t nEvents, bool cacheToy, bool externToy, bool 
       mc_eop_events_cache = importer.GetCache(isEoP,_signal_chain, true, false, nEvents);
     }
   }
+#ifdef EopInserting
+  std::cout << "[DEBUG] Data EoP events size:" << data_eop_events_cache.size() << std::endl;
+  std::cout << "[DEBUG] MC EoP events size:" << mc_eop_events_cache.size() << std::endl;
+#endif
   }//isEop true
 #ifdef DEBUG
   std::cout << "[DEBUG] Data events size:" << data_events_cache.size() << std::endl;
   std::cout << "[DEBUG] MC events size:" << mc_events_cache.size() << std::endl;
-  std::cout << "[DEBUG] Data EoP events size:" << data_eop_events_cache.size() << std::endl;
-  std::cout << "[DEBUG] MC EoP events size:" << mc_eop_events_cache.size() << std::endl;
 #endif
 
   return;
 }
 
 void RooSmearer::InitCategories(bool mcToy, bool isEoP){
+#ifdef EopInserting
+  cout<<"Inside RooSmearer::InitCategories"<<endl;
+  cout<<"isEoP "<<isEoP<<endl;
+#endif
   if(isEoP==false){
   int index=0;
   ZeeCategories.reserve((int)(importer._regionList.size()*(importer._regionList.size()+1)/2 +1));
@@ -260,10 +278,14 @@ void RooSmearer::InitCategories(bool mcToy, bool isEoP){
       index++;
     }	    
   }
-  /*EoP false*/  }else{
-    //EOP true
+  /*EoP false*/  }else{    //EOP true
+#ifdef EopInserting
+    cout<<"Inside RooSmearer::InitCategories"<<endl;
+#endif
   int index=0;
-  EopCategories.reserve((int)(importer._regionList.size()*(importer._regionList.size()+1)/2 +1));
+  //reserve??
+  EopCategories.reserve((int)(importer._regionList.size()));//(importer._regionList.size()+1)/2 +1));
+  //cosa fa???? Tutte sto reserve??
   //cosa fa?
   for(std::vector<TString>::const_iterator region_ele1_itr = importer._regionList.begin();
       region_ele1_itr != importer._regionList.end();
@@ -319,7 +341,7 @@ void RooSmearer::InitCategories(bool mcToy, bool isEoP){
 		  << ": " << cat.categoryName1
 		  << " has been deactivated (nEvents < "; 
 	std::cout << _deactive_minEventsDiag << ")";
-	std::cout << " nEvents mc invMass: " << cat.hist_mc->Integral()
+	std::cout << " nEvents mc EoP: " << cat.hist_mc->Integral()
 		  << std::endl;
 	cat.active=false;
       }     
@@ -371,7 +393,9 @@ void RooSmearer::InitCategories(bool mcToy, bool isEoP){
 
 TH1F *RooSmearer::GetSmearedHisto(ZeeCategory& category, bool isMC,
 				  bool smearEnergy, bool forceNew, bool multiSmearToy){
-
+#ifdef EopInserting
+  cout<<"Inside RooSmearer::GetSmearedHisto"<<endl;
+#endif
 // #ifdef MEM_DEBUG
 //   ProcInfo_t info;
 //   gSystem->GetProcInfo(&info);
@@ -515,6 +539,10 @@ void RooSmearer::SetHisto(const zee_events_t& cache, TH1F *hist) const{
 }
 
 void RooSmearer::SetHisto(const eop_events_t& cache, TH1F *hist) const{
+#ifdef EopInserting
+  cout<<"Inside SetHisto overloaded"<<endl;
+#endif
+
 #ifdef DEBUG
   hist->Print();
 #endif
@@ -522,9 +550,10 @@ void RooSmearer::SetHisto(const eop_events_t& cache, TH1F *hist) const{
   for(eop_events_t::const_iterator event_itr = cache.begin(); 
       event_itr!= cache.end();
       event_itr++){
-    hist->Fill( event_itr->EoverP, 
-		//sqrt(2 * event_itr->energy_ele1 * event_itr->energy_ele2 * event_itr->angle_eta_ele1_ele2),
-		event_itr->weight);
+#ifdef EopInserting
+  cout<<"Filla l'histo con Eop"<<endl;
+#endif
+    hist->Fill( event_itr->EoverP,event_itr->weight);
   }
 #ifdef DEBUG
   hist->Print();
@@ -780,7 +809,7 @@ double RooSmearer::getLogLikelihood(TH1F* data, TH1F* prob) const
 
 
 
-double RooSmearer::getCompatibility(bool forceUpdate) const
+double RooSmearer::getCompatibility(bool forceUpdate,bool isEoP) const
 {
   RooSmearer* myClass=(RooSmearer *) this;
   // myClock->Start();
@@ -788,21 +817,9 @@ double RooSmearer::getCompatibility(bool forceUpdate) const
   std::vector<TH1F *> mcHistos, dataHistos;
 
   double compatibility = 0.;
-  //------------------------------ fill the histograms 
-//   for(std::vector<ZeeCategory>::iterator cat_itr = myClass->ZeeCategories.begin();
-//       cat_itr != myClass->ZeeCategories.end();
-//       cat_itr++){
-//     if(!cat_itr->active) continue;
-//     if(isCategoryChanged(*cat_itr,false)){
-//      myClass->UpdateCategoryNLL(*cat_itr, cat_itr->nLLtoy,false); //the new nll has been updated for the category
-//     }
-//     compatibility+=cat_itr->nll;
-//     myClass->lastNLLrms+= (cat_itr->nllRMS*cat_itr->nllRMS);
-//   }
 
-  //bool withSmearToy=(compatibility - nllMin < deltaNLLMaxSmearToy);
-  //std::cout << "[DEBUG] Compatibility1: " << compatibility << "\t" << compatibility - nllMin << std::endl;
-  //compatibility=0;
+  if(isEoP==false){
+
   bool updated=false;
   for(std::vector<ZeeCategory>::iterator cat_itr = myClass->ZeeCategories.begin();
       cat_itr != myClass->ZeeCategories.end();
@@ -838,9 +855,39 @@ double RooSmearer::getCompatibility(bool forceUpdate) const
       myClass->nllMin=compatibility;
     }
   }
+  }else{
+    //Eop==true
+  bool updated=false;
+  for(std::vector<EopCategory>::iterator cat_itr = myClass->EopCategories.begin();
+      cat_itr != myClass->EopCategories.end();
+      cat_itr++){
+    if(!cat_itr->active) continue;
+    if(forceUpdate||isCategoryChanged(*cat_itr,true)){
+      updated=true;
+#ifdef DEBUG
+      std::cout << "[DEBUG] " << cat_itr->categoryName1 << " - " << cat_itr->categoryName2 << "\t isupdated" << std::endl;
+#endif
+      myClass->UpdateCategoryNLL(*cat_itr, cat_itr->nLLtoy); //the new nll has been updated for the category
+    }
+    compatibility+=cat_itr->nll;
+    myClass->lastNLLrms+= (cat_itr->nllRMS*cat_itr->nllRMS);
+  }
+  if(dataset!=NULL && updated){
+    myClass->nllVar.setVal(compatibility);
+    myClass->dataset->add(RooArgSet(_paramSet,nllVar));
+  }
 
-  //  myClock->Stop();
-  //  myClock->Print();
+  myClass->lastNLL=compatibility;
+  myClass->lastNLLrms=sqrt(lastNLLrms);
+  
+  if(nllBase==0) myClass->nllBase=compatibility;
+  else {
+    if(nllMin> compatibility){
+      myClass->nllMin=compatibility;
+    }
+  }
+  }//it closes EoP==true
+
   return compatibility;
 }
 
@@ -861,7 +908,11 @@ Double_t RooSmearer::evaluate() const
 #endif
 
   //update last result
-  double comp_mean = getCompatibility();
+  //double comp_mean = getCompatibility();
+
+  double isEoP=GetEoP();
+  cout<<"isEoP Inside Evaluate "<<isEoP<<endl;
+  double comp_mean = getCompatibility(false,isEoP);
 
 #ifdef CPU_DEBUG
   myClock->Stop();
@@ -1450,6 +1501,44 @@ bool RooSmearer::isCategoryChanged(ZeeCategory& category, bool updateVar) const{
     
     delete it;
     return changed;
+}
+
+bool RooSmearer::isCategoryChanged(EopCategory& category, bool updateVar) const{
+
+    bool changed=false;
+
+    RooArgList argList1(category.pars1);
+
+    // checking if one of the variables has changed
+    TIterator *it = argList1.createIterator();
+    for(RooRealVar *v = (RooRealVar *) it->Next(); v!=NULL; v = (RooRealVar*) it->Next()){
+      TString varName=v->GetName();
+      double varValue=v->getVal();
+      if(varName.Contains("scale") && varValue!= category.scale1){
+	changed=true;
+#ifdef DEBUG
+	std::cout << "scale changed for: " << category.categoryName1 << "\t" << category.scale1 << "\t" << varValue << "\t" << changed << "\t" << updateVar << std::endl;
+#endif
+	if(updateVar) category.scale1=varValue;
+      }
+      if(varName.Contains("alpha")     && varValue!= category.alpha1){
+	changed=true;
+#ifdef DEBUG
+	std::cout << "alpha changed for: " << category.categoryName1 << "\t" << category.alpha1 << "\t" << varValue << "\t" << changed << std::endl;
+#endif
+	if(updateVar) category.alpha1=varValue;
+      }
+      if(varName.Contains("constTerm") && varValue!= category.constant1){
+	changed=true;
+#ifdef DEBUG
+	std::cout << "alpha changed for: " << category.categoryName1 << "\t" << category.constant1 << "\t" << varValue << "\t" << changed << std::endl;
+#endif
+	if(updateVar) category.constant1 = varValue;
+      }
+    }
+
+    delete it;
+    return changed;
 }      
 
 
@@ -1465,7 +1554,11 @@ void RooSmearer::SetNSmear(unsigned int n_smear, unsigned int nlltoy){
 }
 
 
-void RooSmearer::Init(TString commonCut, TString eleID, Long64_t nEvents, bool mcToy, bool externToy, TString initFile){
+void RooSmearer::Init(TString commonCut, TString eleID,bool isEoP, Long64_t nEvents, bool mcToy, bool externToy, TString initFile){
+#ifdef EopInserting
+  cout<<"Inside RooSmearer::Init"<<endl;
+  cout<<"isEoP"<<isEoP<<endl;
+#endif
   if(mcToy) _isDataSmeared=!externToy; //mcToy;
   if(initFile.Sizeof()>1){
     std::cout << "[INFO] Truth values for toys initialized to " << std::endl;
@@ -1475,8 +1568,11 @@ void RooSmearer::Init(TString commonCut, TString eleID, Long64_t nEvents, bool m
     _paramSet.readFromFile(initFile);
     _paramSet.writeToStream(std::cout, kFALSE);
   }
+#ifdef EopInserting
+  cout<<"Inside RooSmearer::Init => Setting Common Cut, EleID, Cache, InitCategories"<<endl;
+#endif
   SetCommonCut(commonCut); SetEleID(eleID);
-  SetCache(nEvents, mcToy, externToy); InitCategories(mcToy);
+  SetCache(nEvents, mcToy, externToy,isEoP); InitCategories(mcToy, isEoP);
   TStopwatch cl;
   cl.Start();
   evaluate();
@@ -1497,40 +1593,6 @@ void RooSmearer::Init(TString commonCut, TString eleID, Long64_t nEvents, bool m
   getCompatibility(true);
   return;
 }
-
-/*void RooSmearer::Init(bool isEoP, TString commonCut, TString eleID, Long64_t nEvents, bool mcToy, bool externToy, TString initFile){
-  if(mcToy) _isDataSmeared=!externToy; //mcToy;
-  if(initFile.Sizeof()>1){
-    std::cout << "[INFO] Truth values for toys initialized to " << std::endl;
-    //truthSet->readFromFile(initFile);
-    //truthSet->writeToStream(std::cout, kFALSE);
-    std::cout << "------------------------------ Read init toy MC:" << std::endl;
-    _paramSet.readFromFile(initFile);
-    _paramSet.writeToStream(std::cout, kFALSE);
-  }
-  SetCommonCut(commonCut); SetEleID(eleID);
-  cout<<"Inside my Init"<<endl;
-  SetCache(nEvents, mcToy, externToy); InitCategories(mcToy);
-  TStopwatch cl;
-  cl.Start();
-  evaluate();
-  cl.Stop();
-  std::cout << "[INFO] Time for first eval: ";
-  cl.Print();
-  if(mcToy && false){
-    RooArgList argList(_paramSet);
-    TIterator *it = argList.createIterator();
-    for(RooRealVar *var = (RooRealVar *) it->Next(); var!=NULL; var =  (RooRealVar *)it->Next()){
-      var->randomize();
-    }
-    std::cout << "------------------------------ Randomize initial value:" << std::endl;
-    _paramSet.writeToStream(std::cout, kFALSE);
-  }
-
-  // set initial nll values
-  getCompatibility(true);
-  return;
-  }*/
 
 void RooSmearer::UpdateCategoryNLL(ZeeCategory& cat, unsigned int nLLtoy, bool multiSmearToy){
   TH1F *data = GetSmearedHisto(cat, false, _isDataSmeared,true, false); ///-----> not need to repeate! 1 one smearing! otherwise bin errors are wrongly reduced

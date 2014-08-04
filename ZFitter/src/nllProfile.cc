@@ -64,6 +64,7 @@
 //#define DEBUG
 #define MEM_DEBUG
 #define PROFILE_NBINS 2000
+#define EopInserting
 
 using namespace RooStats;
 
@@ -647,26 +648,7 @@ TGraph *GetProfile(RooRealVar *var, RooSmearer& compatibility, int level, bool w
 
 #endif
     std::cout << "nBin = " << nBin << "\t" << bin_width << "\t" << Emean << "\t" << rho << std::endl;
-//     if(var->isConstant()==false){
-//       while(nBin <10 && nBin>1){
-//       //std::cout << "[INFO] Updating from range: " << nBin << "\t" << range_min << "\t" << range_max << std::endl;
-//       bin_width*=0.9;
-//       range_min = std::max(var->getMin(),bin_width*((floor)(range_min / bin_width))- bin_width);
-//       range_max = std::min(var->getMax(),bin_width*((floor)(range_max / bin_width))+ bin_width);
-//       nBin=(int)((range_max-range_min)/bin_width);
-//       //std::cout << "[INFO] Updating to range: " << nBin << "\t" << range_min << "\t" << range_max << std::endl;
-//       if(nBin <=0){
-// 	std::cout << "[ERROR] NBins < 10" << std::endl;
-// 	exit(1);
-//       }
-//     }
-//     while(nBin >40 && level<4 && level > 0){
-//       bin_width*=1.1;
-//       range_min = bin_width*((floor)(range_min / bin_width));
-//       range_max = bin_width*((floor)(range_max / bin_width));
-//       nBin=(int)((range_max-range_min)/bin_width);
-//     }
-//     }
+
    double chi2[PROFILE_NBINS];
    double xValues[PROFILE_NBINS];
    if(trueEval) std::cout << "------------------------------" << std::endl;
@@ -1055,9 +1037,12 @@ Int_t FindMin1D(RooRealVar *var, Double_t *X, Int_t N, Int_t iMinStart, Double_t
   
     //iStep = chi2-chi2old != 0 ? std::max(1,((int) (fabs(0.1/(chi2-chi2old))))) : 1;
     iStep=1;
-    if(var2!=NULL) std::cout << "[FindMin1D] "  << std::setprecision(4) <<  "\t" << var->getVal() << "\t" << var2->getVal() << "\t" << 
+    if(var2!=NULL){
+      std::cout << "[FindMin1D] "  << std::setprecision(4) <<  "\t" << var->getVal() << "\t" << var2->getVal() << "\t" << 
       chi2-chi2init << "\t" << locmin-chi2init << "\t" << min-chi2init << std::endl;
-    else std::cout  << std::setprecision(4) << "[DEBUG] " <<  "\t" << iStep << "\t" << var->getVal() << "\t" << chi2-chi2init << "\t" << locmin-chi2init << "\t" << min-chi2init << "\tchi2= " <<  chi2 << std::endl;
+    }else{
+      std::cout  << std::setprecision(4) << "[DEBUG] " <<  "\t" << iStep << "\t" << var->getVal() << "\t" << chi2-chi2init << "\t" << locmin-chi2init << "\t" << min-chi2init << "\tchi2= " <<  chi2 << std::endl;
+    }
     if(chi2<=locmin){ //local minimum
 	iLocMin=i;
 	locmin=chi2;
@@ -1066,6 +1051,16 @@ Int_t FindMin1D(RooRealVar *var, Double_t *X, Int_t N, Int_t iMinStart, Double_t
     if(stopFindMin1D(i,iLocMin, chi2, min, locmin, phiMin)) break;
     //chi2old=chi2;
     if(i==iLocMin && i-iMinStart==3 && Y[iMinStart]==Y[iMinStart+1] && Y[iMinStart]==Y[iMinStart+2] && Y[iMinStart]==Y[iMinStart+3]){
+#ifdef EopInserting
+      cout<<"You are in No Sensitivity case"<<endl;
+      cout<<"i "<<i<<endl;
+      cout<<"iLocMin "<<iLocMin<<endl;
+      cout<<"iMinStart "<<iMinStart<<endl;
+      cout<<"Y[iMinStart] "<<Y[iMinStart]<<endl;
+      cout<<"Y[iMinStart +1]"<<Y[iMinStart+1]<<endl;
+      cout<<"Y[iMinStart +2]"<<Y[iMinStart+2]<<endl;
+      cout<<"Y[iMinStart +3]"<<Y[iMinStart+3]<<endl;
+#endif
       std::cerr << "[WARNING] No sensitivity to variable: " << var->GetName() << std::endl;
       std::cerr << "          Variable changed to constant" << std::endl;
       std::cout << "[WARNING] No sensitivity to variable: " << var->GetName() << std::endl;
@@ -1076,6 +1071,9 @@ Int_t FindMin1D(RooRealVar *var, Double_t *X, Int_t N, Int_t iMinStart, Double_t
 
   iStep=1;
   for(Int_t i =iMinStart; i >=0; i-=iStep){ //loop versus positive side
+#ifdef EopInserting
+    cout<<"loop versus positive side"<<endl;
+#endif
     var->setVal(X[i]);
     if(var2!=NULL) var2->setVal(X2[i]);
     chi2=smearer.evaluate(); 
@@ -1138,6 +1136,9 @@ bool MinProfile(RooRealVar *var, RooSmearer& smearer, int iProfile,
   }
   iMin_= FindMin1D(var, X, N, iMin_, min, smearer, true, Y);
   if(iMin_<0){ // in case of no sensitivity to the variable it is put has constant and the minimization is interrupted
+    cout<<"N "<<N<<endl;
+    cout<<"iMin_ "<<iMin_<<endl;
+    cout<<"min "<<min<<endl;
     std::cerr << "[WARNING] No sensitivity to var: " << var->GetName() << std::endl;
     var->setVal(v1);
     var->setConstant();
@@ -1351,6 +1352,7 @@ bool MinProfile2D(RooRealVar *var1, RooRealVar *var2, RooSmearer& smearer, int i
 
 void MinimizationProfile(RooSmearer& smearer, RooArgSet args, long unsigned int nIterMCMC, bool mcmc=false){
   std::cout << "------------------------------------------------------------" << std::endl;
+  std::cout << "Inside nllProfile MinimizationProfile "<< std::endl;
   std::cout << "[INFO] Minimization: profile" << std::endl;
   std::cout << "[INFO] Re-initialize nllMin: 1e20"  << std::endl;
   smearer.nllMin=1e20;

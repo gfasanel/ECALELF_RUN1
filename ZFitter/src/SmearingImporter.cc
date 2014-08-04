@@ -9,6 +9,8 @@
 //ZeeEvent and EopEvent are included in SmearingImporter.hh
 #define SELECTOR
 #define FIXEDSMEARINGS
+#define EopInserting
+#define Members
 SmearingImporter::SmearingImporter(std::vector<TString> regionList, TString energyBranchName, TString commonCut):
   //  _chain(chain),
   _regionList(regionList),
@@ -75,6 +77,9 @@ void SmearingImporter::ImportToy(Long64_t nEvents, event_cache_t& eventCache, bo
 
 //must handle both Zee and Eop => Import method overloaded
 void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddString, bool isMC, Long64_t nEvents, bool isToy, bool externToy){
+#ifdef EopInserting
+  cout<<"Inside SmearingImporter::Import => version for Zee_events"<<endl;
+#endif
 
   TRandom3 gen(0);
   if(!isMC) gen.SetSeed(12345);
@@ -178,11 +183,14 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
     hasSmearerCat=true;
   }
 
-  if(hasSmearerCat==false){
+  if(hasSmearerCat==false){//Cosa hai a fare gli if hasSmearerCat dopo se qui uscirebbe subito?????? => sistemare
     std::cerr << "[ERROR] Must have smearerCat branch" << std::endl;
     exit(1);
   }
-  Long64_t entries = chain->GetEntryList()->GetN();
+  //Long64_t entries = chain->GetEntryList()->GetN();//Apocalypse is 0 Zee
+  Long64_t entries = chain->GetEntries();
+  cout<<"entries tramite GetEntryList"<<entries<<endl;
+  cout<<"nEvents "<<nEvents<<endl;
   if(nEvents>0 && nEvents<entries){
     std::cout << "[INFO] Importing only " << nEvents << " events" << std::endl;
     entries=nEvents;
@@ -190,9 +198,16 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
   chain->LoadTree(chain->GetEntryNumber(0));
   Long64_t treenumber=-1;
 
+#ifdef EopInserting
+  cout<<"Defining catSelectors"<<endl;
+#endif
+
   std::vector< std::pair<TTreeFormula*, TTreeFormula*> > catSelectors;
 
   if(hasSmearerCat==false){//ignoring this
+#ifdef EopInserting
+    cout<<"hasSmearerCat false"<<endl;
+#endif
   for(std::vector<TString>::const_iterator region_ele1_itr = _regionList.begin();
       region_ele1_itr != _regionList.end();
       region_ele1_itr++){
@@ -207,7 +222,9 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
 	catSelectors.push_back(std::pair<TTreeFormula*, TTreeFormula*>(selector,NULL));
 	//selector->Print();
       } else if(!_onlyDiagonal){
-
+#ifdef EopInserting
+	cout<<"Not onlyDiagonal"<<endl;
+#endif
 	TString region1=*region_ele1_itr;
 	TString region2=*region_ele2_itr;
 	region1.ReplaceAll(_commonCut,"");
@@ -229,10 +246,16 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
     }
   }
   }//if(hasSmearerCat==false)
-
-  for(Long64_t jentry=0; jentry < entries; jentry++){
-    Long64_t entryNumber= chain->GetEntryNumber(jentry);
-    chain->GetEntry(entryNumber);
+#ifdef EopInserting
+  cout<<"just before the loop"<<endl;
+#endif
+  cout<<"isMC "<<isMC<<endl;
+  cout<<"entries "<<entries<<endl;
+  for(Long64_t jentry=0; jentry < entries; jentry++){//for=> preparing histos
+    //apocalypse Zee
+    //Long64_t entryNumber= chain->GetEntryNumber(jentry);
+    //chain->GetEntry(entryNumber);
+    chain->GetEntry(jentry);
     if(isToy){
       int modulo=eventNumber%5;
       if(jentry<10){
@@ -243,9 +266,8 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
       }
 
       if(isMC && modulo<2) continue;
-      if(!isMC && modulo>=2) continue;
+      if(!isMC && modulo>=2){ cout<<"skipping"<<endl; continue;}
     }
-
     // reject events:
     if(weight>3) continue;
 
@@ -258,8 +280,7 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
 	catSelector_itr->first->UpdateFormulaLeaves();
 	if(catSelector_itr->second!=NULL)       catSelector_itr->second->UpdateFormulaLeaves();
       }
-    }
-
+    }//it closes hasSmearerCat==false
     int evIndex=-1;
     bool _swap=false;
     if(!hasSmearerCat){
@@ -277,13 +298,15 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
 
 	evIndex=catSelector_itr-catSelectors.begin();
       }
-    }else{
+      /*not hasSmearerCat*/}else{
       evIndex=smearerCat[0];
       _swap=smearerCat[1];
       if(jentry<2) std::cout << evIndex << "\t" << _swap << std::endl;
     }
-    if(evIndex<0) continue; // event in no category
-
+    if(evIndex<0) {continue;} // event in no category
+    //#ifdef EopInserting
+    //cout<<"just before ZeeEvent event"<<endl;
+    //#endif
     ZeeEvent event;
     //       if(jentry<30){
     // 	//chain->Show(chain->GetEntryNumber(jentry));
@@ -316,6 +339,12 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
     event.invMass= sqrt(2 * event.energy_ele1 * event.energy_ele2 *
 			(1-((1-t1q)*(1-t2q)+4*t1*t2*cos(phiEle[0]-phiEle[1]))/((1+t1q)*(1+t2q)))
 			);
+    //#ifdef EopInserting
+    //if(isMC){
+    //cout<<"invMass "<<event.invMass<<endl;
+    //}
+    //#endif
+
     if(_isSmearingEt){
       if(_swap){
 	event.energy_ele2/=cosh(etaEle[0]);
@@ -327,7 +356,6 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
     }
     // to calculate the invMass: invMass = sqrt(2 * energy_ele1 * energy_ele2 * angle_eta_ele1_ele2)
     //if(event.invMass < 70 || event.invMass > 110) continue;
-
     event.weight = 1.;
     if(_usePUweight) event.weight *= weight;
     if(_useR9weight) event.weight *= r9weight[0]*r9weight[1];
@@ -386,7 +414,10 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
       }
       //#endif
 
-    if(event.weight<=0 || event.weight!=event.weight || event.weight>10) continue;
+      if(event.weight<=0 || event.weight!=event.weight || event.weight>10) {
+	cout<<"esce qui"<<endl;
+	continue;
+      }
 
 #ifdef FIXEDSMEARINGS
     if(isMC){
@@ -405,7 +436,6 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
 #endif
     includedEvents++;
     cache.at(evIndex).push_back(event);
-    //(cache[evIndex]).push_back(event);
   }
 
   std::cout << "[INFO] Importing events: " << includedEvents << "; events excluded by weight: " << excludedByWeight << std::endl;
@@ -419,14 +449,20 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
 
 //Import overloaded for Eop
 void SmearingImporter::Import(TTree *chain, std::vector<eop_events_t>& cache, TString oddString, bool isMC, Long64_t nEvents, bool isToy, bool externToy){
-
+#ifdef EopInserting
+  cout<<"Inside SmearingImporter::Import"<<endl;
+  cout<<"My overloaded version using vector<eop_events"<<endl;
+#endif
   TRandom3 gen(0);
   if(!isMC) gen.SetSeed(12345);
   TRandom3 excludeGen(12345);
   Long64_t excludedByWeight=0, includedEvents=0;
 
-  // for the energy calculation
+  //The ntuple structure still stores 2 electron variables, even in Single-Electron dataset 
+  //energyEle[1] will be 0 in the Single Electron Dataset
+  // for the eop calculation
   Float_t         energyEle[2];
+  Float_t         momentumEle[2];
   Float_t         corrEle_[2]={1,1};
   Float_t         smearEle_[2]={1,1};
   bool hasSmearEle=false;
@@ -457,6 +493,7 @@ void SmearingImporter::Import(TTree *chain, std::vector<eop_events_t>& cache, TS
   chain->SetBranchAddress("phiEle", phiEle);
 
   chain->SetBranchAddress(_energyBranchName, energyEle);
+  chain->SetBranchAddress("pModeGsfEle", momentumEle);
   if(chain->GetBranch("scaleEle")!=NULL){
     if(isToy==false || (externToy==true && isToy==true && isMC==false)){
     std::cout << "[STATUS] Adding electron energy correction branch from friend" << std::endl;
@@ -526,6 +563,7 @@ void SmearingImporter::Import(TTree *chain, std::vector<eop_events_t>& cache, TS
     std::cerr << "[ERROR] Must have smearerCat branch" << std::endl;
     exit(1);
   }
+
   Long64_t entries = chain->GetEntryList()->GetN();
   if(nEvents>0 && nEvents<entries){
     std::cout << "[INFO] Importing only " << nEvents << " events" << std::endl;
@@ -556,37 +594,10 @@ void SmearingImporter::Import(TTree *chain, std::vector<eop_events_t>& cache, TS
     // reject events:
     if(weight>3) continue;
 
-    if (hasSmearerCat==false && chain->GetTreeNumber() != treenumber) {
-      //SERVE??
-      //treenumber = chain->GetTreeNumber();
-      //here
-      //for(std::vector< TTreeFormula*>::const_iterator catSelector_itr = catSelectors.begin();
-      //  catSelector_itr != catSelectors.end();
-      //  catSelector_itr++){
-	
-      //catSelector_itr->first->UpdateFormulaLeaves();
-      //if(catSelector_itr->second!=NULL)       catSelector_itr->second->UpdateFormulaLeaves();//che fa??
-      //}
-    }
 
     int evIndex=-1;
     bool _swap=false;
     if(!hasSmearerCat){
-      //Ripulire se non serve
-    //for(std::vector< std::pair<TTreeFormula*, TTreeFormula*> >::const_iterator catSelector_itr = catSelectors.begin();
-    //  catSelector_itr != catSelectors.end();
-    //  catSelector_itr++){
-    //_swap=false;
-    //TTreeFormula *sel1 = catSelector_itr->first;
-    //TTreeFormula *sel2 = catSelector_itr->second;
-    //if(sel1==NULL) continue; // is it possible?
-    //if(sel1->EvalInstance()==false){
-    //  if(sel2==NULL || sel2->EvalInstance()==false) continue;
-    //  else _swap=true;
-      //}
-
-      //	evIndex=catSelector_itr-catSelectors.begin();
-      // }
     }else{
       evIndex=smearerCat[0];
       //_swap=smearerCat[1];
@@ -595,35 +606,28 @@ void SmearingImporter::Import(TTree *chain, std::vector<eop_events_t>& cache, TS
     if(evIndex<0) continue; // event in no category
 
     EopEvent event;
-    //       if(jentry<30){
-    // 	//chain->Show(chain->GetEntryNumber(jentry));
-    // 	std::cout << "[INFO] corrEle[0] = " << corrEle_[0] << std::endl;
-    // 	std::cout << "[INFO] corrEle[1] = " << corrEle_[1] << std::endl;
-    // 	std::cout << "[INFO] smearEle[0] = " << smearEle_[0] << std::endl;
-    // 	std::cout << "[INFO] smearEle[1] = " << smearEle_[1] << std::endl;
-    // 	std::cout << "[INFO] Category = " << evIndex << std::endl;
-    //       }
     
-    //float t1=TMath::Exp(-etaEle[0]);
-    //float t1q = t1*t1;
-
-    
-    if(isMC && hasSmearEle){
+    if(isMC && hasSmearEle){//I want to smear the MC and use the smeared MC to fit data
       smearEle_[0]=gen.Gaus(1,smearEle_[0]);
 
     }
 
     //------------------------------
+    //Defining the members of the EopEvent object
     event.energy_ele1 = energyEle[0] * corrEle_[0] * smearEle_[0];
+    event.momentum_ele1=momentumEle[0];
     event.EoverP=event.energy_ele1/event.momentum_ele1;
-    
-//event.invMass= sqrt(2 * event.energy_ele1 * event.energy_ele2 *
-    //		(1-((1-t1q)*(1-t2q)+4*t1*t2*cos(phiEle[0]-phiEle[1]))/((1+t1q)*(1+t2q)))
-    //		);
+
+#ifdef Members
+    cout<<"energy "<<energyEle[0]<<endl;
+    cout<<"momentum (branch attivato in SmearingImporter::GetCache) "<<momentumEle[0]<<endl;
+    cout<<"EoverP"<<event.EoverP<<endl;
+#endif
+
     if(_isSmearingEt){
 	event.energy_ele1/=cosh(etaEle[0]);
       }	
-    // to calculate the invMass: invMass = sqrt(2 * energy_ele1 * energy_ele2 * angle_eta_ele1_ele2)
+
     //if(event.invMass < 70 || event.invMass > 110) continue;
 
     event.weight = 1.;
@@ -689,32 +693,28 @@ void SmearingImporter::Import(TTree *chain, std::vector<eop_events_t>& cache, TS
 #ifdef FIXEDSMEARINGS
     if(isMC){
       event.smearings_ele1 = new float[NSMEARTOYLIM];
-      //event.smearings_ele2 = new float[NSMEARTOYLIM];
       for(int i=0; i < NSMEARTOYLIM; i++){
 	event.smearings_ele1[i] = (float) gen.Gaus(0,1);
-	//event.smearings_ele2[i] = (float) gen.Gaus(0,1);
       }
     }else{
       event.smearings_ele1 = new float[1];
-      //event.smearings_ele2 = new float[1];
       event.smearings_ele1[0] = (float) gen.Gaus(0,1);
-      //event.smearings_ele2[0] = (float) gen.Gaus(0,1);
     }	
 #endif
     includedEvents++;
     cache.at(evIndex).push_back(event);
-    //(cache[evIndex]).push_back(event);
   }
 
   std::cout << "[INFO] Importing events: " << includedEvents << "; events excluded by weight: " << excludedByWeight << std::endl;
   chain->ResetBranchAddresses();
   chain->GetEntry(0);
   return;
-
-
-}
+}//It closes Import (overloaded version)
 
 SmearingImporter::regions_cache_t SmearingImporter::GetCache(TChain *_chain, bool isMC, bool odd, Long64_t nEvents, bool isToy, bool externToy){
+#ifdef EopInserting
+  cout<<"Inside vector<zee_events_t> SmearingImporter::GetCache"<<endl;
+#endif
 
   TString eleID_="eleID_"+_eleID;
 
@@ -751,10 +751,8 @@ SmearingImporter::regions_cache_t SmearingImporter::GetCache(TChain *_chain, boo
   if(_chain->GetBranch("ptWeight")!=NULL)  _chain->SetBranchStatus("ptWeight", 1);
   if(_chain->GetBranch("mcGenWeight")!=NULL)  _chain->SetBranchStatus("mcGenWeight", 1);
   if(_chain->GetBranch("smearerCat")!=NULL){
-    //std::cout << "[STATUS] Activating branch smearerCat" << std::endl;
     _chain->SetBranchStatus("smearerCat", 1);
   }
-
 
 
   for(std::vector<TString>::const_iterator region_ele1_itr = _regionList.begin();
@@ -767,11 +765,18 @@ SmearingImporter::regions_cache_t SmearingImporter::GetCache(TChain *_chain, boo
     }
   }
  
+  #ifdef EopInserting
+  cout<<"making list"<<endl;
+#endif
+
   TString evListName="evList_";
   evListName+=_chain->GetTitle();
   evListName+="_all";
   TEntryList *oldList = _chain->GetEntryList();
   if(oldList==NULL){
+#ifdef EopInserting
+    cout<<"oldlist null"<<endl;
+#endif
     std::cout << "[STATUS] Setting entry list: " << evListName << std::endl;
     _chain->Draw(">>"+evListName, cutter.GetCut(_commonCut+"-"+eleID_,isMC), "entrylist");
     //_chain->Draw(">>"+evListName, "", "entrylist");
@@ -790,8 +795,14 @@ SmearingImporter::regions_cache_t SmearingImporter::GetCache(TChain *_chain, boo
       cache.push_back(eventCache);
     }
   }
-
+#ifdef EopInserting
+  cout<<"Just before calling SmearingImporter::Import"<<endl;
+#endif
+  cout<<"Chain entry "<<_chain->GetEntries()<<endl;
   Import(_chain, cache, oddString, isMC, nEvents, isToy, externToy);
+#ifdef EopInserting
+  cout<<"Just after calling SmearingImporter::Import"<<endl;
+#endif
 #ifdef DEBUG
   int index=0;
   for(std::vector<TString>::const_iterator region_ele1_itr = _regionList.begin();
@@ -813,7 +824,11 @@ SmearingImporter::regions_cache_t SmearingImporter::GetCache(TChain *_chain, boo
 }
 
 SmearingImporter::eop_events_cache_t SmearingImporter::GetCache(bool isEoP, TChain *_chain, bool isMC, bool odd, Long64_t nEvents, bool isToy, bool externToy){
-
+  //overloaded version
+#ifdef EopInserting
+  cout<<"Inside vector<eop_events_t> SmearingImporter::GetCache"<<endl;
+  cout<<"isEoP "<<isEoP<<endl;
+#endif
   TString eleID_="eleID_"+_eleID;
 
   TString oddString;
@@ -828,6 +843,7 @@ SmearingImporter::eop_events_cache_t SmearingImporter::GetCache(bool isEoP, TCha
   _chain->SetBranchStatus("etaEle", 1);
   _chain->SetBranchStatus("phiEle", 1);
   _chain->SetBranchStatus(_energyBranchName, 1);
+  _chain->SetBranchStatus("pModeGsfEle", 1);
   if(isToy) _chain->SetBranchStatus("eventNumber",1);
   //  std::cout << _chain->GetBranchStatus("seedXSCEle") <<  std::endl;
   //  std::cout << _chain->GetBranchStatus("etaEle") <<  std::endl;
@@ -885,7 +901,12 @@ SmearingImporter::eop_events_cache_t SmearingImporter::GetCache(bool isEoP, TCha
   }
 
 //in this case Import takes cache as vector<eop_events>
+//Import is a method of SmearingImporter
   Import(_chain, cache, oddString, isMC, nEvents, isToy, externToy);
+#ifdef EopInserting
+  cout<<"After having called Import inside GetCache"<<endl;
+#endif
+
 #ifdef DEBUG
   int index=0;
   for(std::vector<TString>::const_iterator region_ele1_itr = _regionList.begin();
@@ -900,6 +921,9 @@ SmearingImporter::eop_events_cache_t SmearingImporter::GetCache(bool isEoP, TCha
 #endif
   myClock.Stop();
   myClock.Print();
+#ifdef EopInserting
+cout<<"At the end of GetCache"<<endl;
+#endif
   return cache;
 }
 

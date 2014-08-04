@@ -21,17 +21,18 @@ void ReassociateFriends(TFile *f, TChain *chain){
 	friendElement != NULL; friendElement = (TFriendElement*) newfriend_itr.Next()){
       TString treeName=friendElement->GetTreeName();
       TTree *tree=friendElement->GetTree();
-      std::cout << "[STATUS] Removing old friend " << treeName  << std::endl;
+      // std::cout << "[STATUS] Removing old friend " << treeName  << std::endl;
       chain->RemoveFriend(tree);
       TChain *friendChain = (TChain *) f->Get(treeName);
       if(friendChain==NULL) continue;
+      cout<<"Adding "<<treeName<<" in the friend list"<<endl;
       newFriendVec.push_back(friendChain);
     }
 
     for(std::vector<TChain*>::const_iterator chain_itr = newFriendVec.begin();
     chain_itr!=newFriendVec.end();
     chain_itr++){
-      cout<<"Adding Again the Friend Chain"<<endl;
+      cout<<"[STATUS] Adding Friend Chain"<<endl;
       TChain *friendChain=*chain_itr;
       chain->AddFriend(friendChain);
     }

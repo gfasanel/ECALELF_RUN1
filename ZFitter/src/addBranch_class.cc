@@ -4,7 +4,7 @@
 #include <TLorentzVector.h>
 #include <iostream> 
 
-#define EopCOUT
+#define EopInserting
 //#define DEBUG
 //#define NOFRIEND
 
@@ -316,7 +316,7 @@ TTree* addBranch_class::AddBranch_iSM(TChain* originalChain, TString treename, T
 
 // branch with the category index
 TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString treename, bool isEoP, bool isMC){
-  #ifdef EopCOUT
+  #ifdef EopInserting
   cout<<"Inside addBranch_smearerCat method of addBranch_class.cc"<<endl;
   #endif
   
@@ -331,7 +331,7 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
     
     //setting the new tree
     TTree *newtree = new TTree(treename, treename);
-    Int_t  smearerCat[2];//basta 1 ?
+    Int_t  smearerCat[2];//the first one is the real index, the second is a flag
     Char_t cat1[10];// a cosa serve?
     sprintf(cat1,"XX");
     newtree->Branch("smearerCat", smearerCat, "smearerCat[2]/I");
@@ -345,8 +345,11 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
     for(std::vector<TString>::const_iterator region_ele1_itr = _regionList.begin();
 	region_ele1_itr != _regionList.end();
 	region_ele1_itr++){
+#ifdef EopInserting
+      cout<<"Inside iterator over categories"<<endl;
+#endif
       
-      // \todo activating branches // not efficient in this loop
+      //cutter is an ElectronCategory_class object
       std::set<TString> branchNames = cutter.GetBranchNameNtuple(*region_ele1_itr);
       for(std::set<TString>::const_iterator itr = branchNames.begin();
 	itr != branchNames.end(); itr++){
@@ -359,6 +362,9 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
       TTreeFormula *selector = new TTreeFormula("selector-"+(region), cutter.GetCut(region+oddString, isMC), originalChain);
       catSelectors.push_back(selector);
       //selector->Print();
+#ifdef EopInserting
+      cout<<"Before cutter.GetCut"<<endl;
+#endif
       std::cout << cutter.GetCut(region+oddString, isMC) << std::endl;
       //exit(0);
     }//end of loop on region_ele1_itr
@@ -394,8 +400,7 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
     }
     
     smearerCat[0]=evIndex;
-    smearerCat[1]=1; //for the moment
-    //smearerCat[1]=_swap ? 1 : 0;
+    smearerCat[1]=999; //so the second category index becomes a flag
     newtree->Fill();
     if(jentry%(entries/100)==0) std::cerr << "\b\b\b\b" << std::setw(2) << jentry/(entries/100) << "%]";
   }

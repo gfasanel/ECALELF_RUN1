@@ -157,17 +157,9 @@ public:
    {
      return new RooSmearer(*this,newname);
    };
-//   virtual ~RooSmearer();
-//  inline double eval() const { std::cout << "##############################" << std::endl;return evaluate(); } ;
-  Double_t evaluate(void) const;
 
-// inline  RooSmearer(const char *name,TChain *data_chain_, 
-// 	     TChain *signal_chain_,
-// 	     TChain *bkg_chain_, 
-// 	     std::vector<TString> regionList,
-// 	     std::vector<RooArgSet > params,
-// 	     TString energyBranchName="energySCEle_regrCorr_ele"
-// 		   ){};
+  Double_t evaluate(void) const;//const 
+
   RooSmearer(const char *name, TChain *data_chain_, 
 	     TChain *signal_chain_,
 	     TChain *bkg_chain_, 
@@ -176,7 +168,6 @@ public:
 	     RooArgSet parset,
 	     TString energyBranchName="energySCEle_regrCorr_ele"
 	     );
-
 
   // Settting options
   void AutoNSmear(ZeeCategory& category);
@@ -221,8 +212,7 @@ public:
   }
 
   /// Initialize the categories: import from the tree
-  void Init(TString commonCut, TString eleID, Long64_t nEvents=0, bool mcToy=false, bool externToy=true,TString initFile="");
-  //void Init(bool isEoP,TString commonCut, TString eleID, Long64_t nEvents=0, bool mcToy=false, bool externToy=true,TString initFile="");
+  void Init(TString commonCut, TString eleID,bool isEoP=false, Long64_t nEvents=0, bool mcToy=false, bool externToy=true,TString initFile="");
   //  TH1F *GetSmearedHisto(TString categoryName, 
   //			bool smearEnergy=false, TString histoName="") const;
   //  TH1F *GetSmearedHisto(int categoryIndex,
@@ -253,6 +243,7 @@ public:
 private:
   TChain *_data_chain, *_signal_chain;
   SmearingImporter importer;
+  //This are vector<vector<ZeeEvent>> 
   std::vector<zee_events_t> mc_events_cache;
   std::vector<zee_events_t> data_events_cache;
   //To do? => make a basic class Event.hh and ZeeEvent, EopEvent inheriting from it
@@ -265,6 +256,7 @@ private:
   RooSetProxy _paramSet;
   RooArgSet *truthSet, pullArgs;
 
+  //To do => var_min_; var_max; var_bin ==> General
   double invMass_min_;
   double invMass_max_;
   double invMass_bin_;
@@ -277,6 +269,7 @@ private:
 
   //  unsigned int _deactive_minEvents;
 public:
+  bool isEoP_;
   float deltaNLLMaxSmearToy;
   unsigned int _deactive_minEventsDiag;
   unsigned int _deactive_minEventsOffDiag;
@@ -345,8 +338,16 @@ public:
   TH1F *GetSmearedHisto(EopCategory& category, bool isMC,
 			bool smearEnergy, bool forceNew=false, bool multiSmearToy=true);
 
-  
-  double getCompatibility(bool forceUpdate=false) const;
+  void SetEoP(bool is)
+  {
+    isEoP_=is;
+  };
+
+  bool GetEoP(void) const
+  { return isEoP_;
+  };
+
+  double getCompatibility(bool forceUpdate=false,bool isEoP=false) const;
   void DumpNLL(void) const;
   //  float getCompatibility(const RooSmearer *ptr);
   inline RooArgSet GetParams(void){return _paramSet;};
