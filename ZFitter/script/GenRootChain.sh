@@ -1,25 +1,21 @@
-#usage: ./script/GenRootChain.sh -f data/validation/22Jan2012-runDepMCAll_v3.dat --corrEleType=HggRunEtaR9Et --smearEleType=stochastic
+#usage:
+# ./script/GenRootChain.sh --corrEleType=HggRunEtaR9Et --smearEleType=stochastic
 #root -l tmp/d_chain.root tmp/s1_chain.root tmp/s2_chain.root tmp/s3_chain.root tmp/load.C 
 
-#!/bin/bash
 
+configFile=data/validation//22Jan2012-runDepMCAll_my.dat
+regionsFile=data/regions/basic_pt.dat
+#smearEleFile=mc_smear/smearing_sigma_and_errors_stocastic_rd_mc.dat
+#corrEleFile=data_scale/step8-invMass_SC_regrCorrSemiParV5_pho-loose-Et_20-trigger-noPF-HggRunEtaR9Et.dat
 
-#tag_name=""
 commonCut=Et_25-trigger-noPF
 selection=loose
-invMass_var=invMass_SC_regrCorr_ele
-#invMass_var=invMass_SC_regrCorrSemiParV5_ele
+invMass_var=invMass_SC_regrCorrSemiParV5_ele
 #invMass_var=invMass_SC
-configFile=data/validation/monitoring_2012_53X.dat
-regionsFile=data/regions/scaleStep2smearing_9.dat
-
 runRangesFile=data/runRanges/monitoring.dat
 baseDir=test
 updateOnly="--updateOnly"
 outDirImg="tmp"
-# VALIDATION=y
-# STABILITY=y
-# SLIDES=y
 
 usage(){
     echo "`basename $0` [options]" 
@@ -33,27 +29,13 @@ usage(){
     echo " --corrEleFile arg"
     echo " --smearEleType arg"
     echo " --smearEleFile arg"
+    echo " --EoP arg"
     echo " --fitterOptions arg"
-#    echo " --puName arg             "
-#    echo " --runRangesFile arg (=${runRangesFile})  run ranges for stability plots"
-#    echo " --selection arg (=${selection})     "
-#    echo " --invMass_var arg (=${invMass_var})"
-#    echo " --validation        "
-#    echo " --stability         "
-#    echo " --etaScale          "
-#    echo " --systematics       "
-#    echo " --slides            "
-#    echo " --baseDir arg (=${baseDir})  base directory for outputs"
-#    echo " --rereco arg  name of the tag used fro the rereco"
-#    echo " --test"
-#    echo " --commonCut"
-#    echo " --period RUN2012A, RUN2012AB, RUN2012C, RUN2012D"
 }
 
 desc(){
     echo "#####################################################################"
-    echo "## This script make the usual validation table and stability plots"
-    echo "## "
+    echo "## This script makes the root chains (selected events, MC corrections, categorizations). Ready to plot variables through tmp/load.C"
     echo "#####################################################################"
 }
 
@@ -61,7 +43,7 @@ desc(){
 
 
 # options may be followed by one colon to indicate they have a required argument
-if ! options=$(getopt -u -o hf: -l help,runRangesFile:,selection:,invMass_var:,puName:,baseDir:,rereco:,validation,stability,etaScale,systematics,slides,onlyTable,test,commonCut:,period:,noPU,outDirImg:,addBranch:,regionsFile:,corrEleType:,corrEleFile:,smearEleType:,smearEleFile:,fitterOptions: -- "$@")
+if ! options=$(getopt -u -o hf: -l help,runRangesFile:,selection:,invMass_var:,puName:,baseDir:,rereco:,validation,stability,etaScale,systematics,slides,onlyTable,test,commonCut:,period:,noPU,outDirImg:,addBranch:,regionsFile:,corrEleType:,corrEleFile:,smearEleType:,smearEleFile:,EoP:,fitterOptions: -- "$@")
 then
     # something went wrong, getopt will put out an error message for us
     exit 1
@@ -84,6 +66,7 @@ do
 	--smearEleFile) smearEleFile="--smearEleFile=$2"; shift;;
 	--fitterOptions) fitterOptions="$fitterOptions $2"; shift;;
         --invMass_var) invMass_var=$2; echo "[OPTION] invMass_var = ${invMass_var}"; shift;;
+	--EoP) EoP="--EoP=$2"; shift;;
 	--outDirImg) outDirImg=$2; shift;;
 	--puName) puName=$2; shift;;
 	--runRangesFile) runRangesFile=$2; echo "[OPTION] runRangesFile = ${runRangesFile}"; shift;;
@@ -149,12 +132,12 @@ fi
 # saving the root files with the chains
 rm tmp/*_chain.root
 
-./bin/ZFitter.exe --saveRootMacro -f ${configFile} --regionsFile=${regionsFile} ${noPU} ${addBranchList} ${corrEleFile} ${corrEleType} ${smearEleFile} ${smearEleType} ${fitterOptions} || exit 1
+./bin/ZFitter.exe --saveRootMacro -f ${configFile} --regionsFile=${regionsFile} ${noPU} ${corrEleFile} ${corrEleType} ${smearEleFile} ${smearEleType} ${EoP} ${addBranchList} ${fitterOptions} || exit 1
 
-#echo ${noPU} ${addBranchList} ${corrEleFile} ${corrEleType} ${fitterOptions}
+echo "./bin/ZFitter.exe --saveRootMacro -f" ${configFile} "--regionsFile="${regionsFile} ${noPU} ${corrEleFile} ${corrEleType} ${smearEleFile} ${smearEleType} ${EoP} ${addBranchList} ${fitterOptions}
 
 
-# adding all the chains in one file
+# adding all the chains (events + friend trees) in one file, so you can plot variables
 for file in tmp/s[0-9]*_selected_chain.root tmp/d_selected_chain.root tmp/s_selected_chain.root 
   do
   name=`basename $file .root | sed 's|_.*||'`
@@ -162,10 +145,9 @@ for file in tmp/s[0-9]*_selected_chain.root tmp/d_selected_chain.root tmp/s_sele
   hadd tmp/${name}_chain.root tmp/${name}_*_chain.root
   filelist="$filelist tmp/${name}_chain.root"
 done
-#hadd tmp/s_chain.root tmp/s_*_chain.root
-#hadd tmp/d_chain.root tmp/d_*_chain.root
 
-#NOTA => previously, 3 times signalA
+
+#Creating file tmp/load.C with that text:
 cat > tmp/load.C <<EOF
 {
   gROOT->ProcessLine(".L macro/PlotDataMC.C+");
@@ -196,7 +178,7 @@ cat > tmp/load.C <<EOF
 EOF
 
 echo "Now you can run:"
-echo "root -l $filelist tmp/load.C tmp/standardDataMC.C" 
+echo "root -l d_chain s1_chain s2_chain tmp/load.C tmp/standardDataMC.C" 
 #echo "root -l tmp/$filelist tmp/load.C tmp/standardDataMC.C" 
 echo "change the outputPath string in load.C to have the plots in the correct directory"
 
