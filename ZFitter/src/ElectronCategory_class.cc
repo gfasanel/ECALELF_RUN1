@@ -4,6 +4,7 @@
 #define GAP
 #include <TPRegexp.h>
 #include <stdlib.h>
+//#define EopInserting
 
 ElectronCategory_class::~ElectronCategory_class(){
 
@@ -29,23 +30,31 @@ TCut ElectronCategory_class::GetCut(TString region, bool isMC, int nEle, bool co
     return "error";
   }
   
+#ifdef EopInserting
+  std::cout<<"Inside ElectronCategory_class::GetCut"<<std::endl;
+#endif
+
   TCut cut;
   cut.Clear();
-
+#ifdef EopInserting
+  std::cout<<"Before ElectronCategory_class::GetCutSet"<<std::endl;
+#endif
   std::set<TString> cutSet = GetCutSet(region);
+#ifdef EopInserting
+  std::cout<<"After ElectronCategory_class::GetCutSet"<<std::endl;
+#endif
   for(std::set<TString>::const_iterator itr = cutSet.begin();
       itr != cutSet.end();
       itr++){
     TString cut_string = *itr;
 #ifdef DEBUG
-    std::cout << cut_string << std::endl;
+    std::std::cout << cut_string << std::endl;
 #endif
     if(isMC && cut_string.Contains("runNumber")){
       cut_string.Insert(0,"(");
       cut_string+="|| runNumber==1)"; 
     }
     if(isMC && cut_string.Contains("lumiBlock")) continue;
-    //      std::cout << "[DEBUG] Skipping runNumber cut for MC " << isMC << "\t" << string << std::endl;
 
     if(isMC==false && (corrEle || _corrEle)){
       //std::cerr << "[INFO] scaleEle for GetCut" << std::endl;
@@ -61,15 +70,12 @@ TCut ElectronCategory_class::GetCut(TString region, bool isMC, int nEle, bool co
       } else {
 	cut_string.ReplaceAll("_ele1","_ele2");
       }
-
-//       if(nEle==1){
-// 	if(!cut_string.Contains("_ele1")) continue;
-// 	else cut_string.ReplaceAll("_ele2","_ele1");
-//       } else {
-// 	if(!cut_string.Contains("_ele2")) continue;
-// 	else cut_string.ReplaceAll("_ele1","_ele2");
-//       }
     }
+
+#ifdef EopInserting
+      std::cout<<"At the end of GetCut"<<std::endl;
+#endif
+
     if(!_isRooFit){
       //  TString cut_string(cut_string_string);
       cut_string.ReplaceAll("_ele1", "[0]");
@@ -88,6 +94,9 @@ TCut ElectronCategory_class::GetCut(TString region, bool isMC, int nEle, bool co
 
 
 std::set<TString> ElectronCategory_class::GetCutSet(TString region){
+#ifdef EopInserting
+  std::cout<<"Inside ElectronCategory_class::GetCutSet "<<std::endl;
+#endif
   TCut cut_string;
   cut_string.Clear();
 
@@ -99,6 +108,12 @@ std::set<TString> ElectronCategory_class::GetCutSet(TString region){
 
   //Need to implement this part for Pt
   //
+  TCut gain12_ele1_cut = "gainEle[0]==0";
+  TCut gain6_ele1_cut = "gainEle[0]==1";
+  TCut gain1_ele1_cut = "gainEle[0]==2";
+
+  TCut Pt_150_250_ele1_cut = "PtEle[0]>=150 && PtEle[0]<=250";
+
   TCut EB_ele1_cut = "abs(etaEle_ele1) < 1.4442";
   TCut EB_ele2_cut = "abs(etaEle_ele2) < 1.4442";
   TCut EB_cut = EB_ele1_cut && EB_ele2_cut;
@@ -225,9 +240,8 @@ std::set<TString> ElectronCategory_class::GetCutSet(TString region){
 	i++){
       string+="-"; string+=((TObjString *)region_splitted->At(i+1))->GetString();
     }
-#ifdef DEBUG
-    std::cout << string << std::endl;
-#endif
+
+    //Taking cuts
 
     if(string.CompareTo("all")==0){
       continue;
@@ -246,9 +260,39 @@ std::set<TString> ElectronCategory_class::GetCutSet(TString region){
       continue;
     }
 
+    if(string.CompareTo("gain12_ele1")==0){ 
+      cut_string+=gain12_ele1_cut;
+      cutSet.insert(TString(gain12_ele1_cut));
+      continue;
+    }
+
+    if(string.CompareTo("gain6_ele1")==0){ 
+      cut_string+=gain6_ele1_cut;
+      cutSet.insert(TString(gain6_ele1_cut));
+      continue;
+    }
+
+    if(string.CompareTo("gain1_ele1")==0){ 
+      cut_string+=gain1_ele1_cut;
+      cutSet.insert(TString(gain1_ele1_cut));
+      continue;
+    }
+
+    if(string.CompareTo("Pt_150_250_ele1")==0){ 
+      cut_string+=Pt_150_250_ele1_cut;
+      cutSet.insert(TString(Pt_150_250_ele1_cut));
+      continue;
+    }
+
     if(string.CompareTo("EB")==0){ 
       cut_string+=EB_cut;
       cutSet.insert(TString(EB_cut));
+      continue;
+    }
+
+    if(string.CompareTo("EB_ele1")==0){ 
+      cut_string+=EB_ele1_cut;
+      cutSet.insert(TString(EB_ele1_cut));
       continue;
     }
 
@@ -267,6 +311,12 @@ std::set<TString> ElectronCategory_class::GetCutSet(TString region){
     if(string.CompareTo("EE")==0){
       cut_string+=EE_cut;
       cutSet.insert(TString(EE_cut));
+      continue;
+    }
+
+    if(string.CompareTo("EE_ele1")==0){ 
+      cut_string+=EE_ele1_cut;
+      cutSet.insert(TString(EE_ele1_cut));
       continue;
     }
 

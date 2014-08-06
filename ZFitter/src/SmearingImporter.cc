@@ -10,7 +10,7 @@
 #define SELECTOR
 #define FIXEDSMEARINGS
 #define EopInserting
-#define Members
+//#define Members
 SmearingImporter::SmearingImporter(std::vector<TString> regionList, TString energyBranchName, TString commonCut):
   //  _chain(chain),
   _regionList(regionList),

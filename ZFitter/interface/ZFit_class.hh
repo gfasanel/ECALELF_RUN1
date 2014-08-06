@@ -51,7 +51,7 @@ class ZFit_class{
 	     TChain *bkg_chain_, 
 	     //	     config_map_t config_map_,
 	     TString invMass_VarName="invMass_SC", double invMass_min=65, double invMass_max=115, double bin_width=0.5
-	     //int eleID_=7, TString commonCut="Et_25", bool odd=false
+	 
 	     );
 
 //   ZFit_class(chain_map_t data_chain_map_, 

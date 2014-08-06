@@ -132,9 +132,11 @@ fi
 # saving the root files with the chains
 rm tmp/*_chain.root
 
+echo "./bin/ZFitter.exe --saveRootMacro -f" ${configFile} "--regionsFile="${regionsFile} ${noPU} ${corrEleFile} ${corrEleType} ${smearEleFile} ${smearEleType} ${EoP} ${addBranchList} ${fitterOptions}
+
 ./bin/ZFitter.exe --saveRootMacro -f ${configFile} --regionsFile=${regionsFile} ${noPU} ${corrEleFile} ${corrEleType} ${smearEleFile} ${smearEleType} ${EoP} ${addBranchList} ${fitterOptions} || exit 1
 
-echo "./bin/ZFitter.exe --saveRootMacro -f" ${configFile} "--regionsFile="${regionsFile} ${noPU} ${corrEleFile} ${corrEleType} ${smearEleFile} ${smearEleType} ${EoP} ${addBranchList} ${fitterOptions}
+
 
 
 # adding all the chains (events + friend trees) in one file, so you can plot variables
@@ -178,7 +180,7 @@ cat > tmp/load.C <<EOF
 EOF
 
 echo "Now you can run:"
-echo "root -l d_chain s1_chain s2_chain tmp/load.C tmp/standardDataMC.C" 
+echo "root -l d_chain s1_chain s2_chain tmp/load.C      tmp/standardDataMC.C" 
 #echo "root -l tmp/$filelist tmp/load.C tmp/standardDataMC.C" 
 echo "change the outputPath string in load.C to have the plots in the correct directory"
 

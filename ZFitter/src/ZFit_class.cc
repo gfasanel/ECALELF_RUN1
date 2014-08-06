@@ -29,6 +29,8 @@ Description: class that provide flexible and simple way to fit the Zee invariant
 //#define FIT_DEBUG
 //#define NOIMPORT
 //#define NUM_EVENTS 100
+#define EopInserting
+
 ZFit_class::~ZFit_class(void){
   std::cout << "[STATUS] DESTROY ZFitter" << std::endl;
   if(commonMC  !=NULL) delete commonMC;
@@ -59,6 +61,7 @@ ZFit_class::ZFit_class(TChain *data_chain_,
   signal_chain(signal_chain_),
   bkg_chain(bkg_chain_),
 
+  //invMass is a member of ZFit_class: it's a RooRealVar
   invMass(invMass_VarName, "Mee", invMass_min, invMass_max,"GeV/c^{2}"),
   convBwCbPdf(invMass),
   cruijffPdf(invMass),
@@ -83,11 +86,17 @@ ZFit_class::ZFit_class(TChain *data_chain_,
   int nBins = (int)((invMass.getMax()-invMass.getMin())/bin_width);
   invMass.setBins(10000);
   invMass.setBins(nBins,"plotRange");
+#ifdef EopInserting
+  cout<<"Inside ZFit_class constructor "<<endl;
+  cout<<"Max "<<invMass.getMax()<<endl;
+  cout<<"Min "<<invMass.getMin()<<endl;
+  cout<<"bin_width "<<bin_width;
+#endif
   std::cout << "nBins = " << nBins << "\t" << invMass.getBins("plotRange") << std::endl;
 
   invMass.Print();
 
-  SetPDF_model();
+  SetPDF_model();//SetPDF_model is a method of ZFit_class
 
   setTDRStyle1();
   //  TGaxis::SetMaxDigits(3);
@@ -405,8 +414,12 @@ RooAbsData *ZFit_class::ReduceDataset(TChain *data, TString region, bool isMC, b
 
 void ZFit_class::SetPDF_signal(int pdf_index){
 
+#ifdef EopInserting
+  cout<<"Inside ZFit_class::SetPDF_signal"<<endl;
+#endif
+
   signal_pdf_type=pdf_index;
-  // va fatta la scelta tra cruijff e convolution
+  // choose between cruijff e convolution
   switch(pdf_index){
   case 0:
     std::cout << "[SETTING SIGNAL PDF]: BW and CB convolution" << std::endl;
@@ -431,15 +444,17 @@ void ZFit_class::SetPDF_signal(int pdf_index){
 
 void ZFit_class::SetPDF_model(int signal_pdf_index, int bkg_pdf_index){
 
-  SetPDF_signal(signal_pdf_index);
-
+#ifdef EopInserting
+  cout<<"Inside ZFit_class:SetPDF_model"<<endl;
+#endif
+  SetPDF_signal(signal_pdf_index);//default signal_pdf_index is 0
 
   // to be put in a separate method setting only the bkg pdf
   bkg_pdf_type=bkg_pdf_index;
 
   if(bkg_pdf_index==0){
     // we use only signal hypothesis
-    std::cout << "[SETTING] model = only signal" << std::endl;
+    std::cout << "[SETTING] model = only signal (Using MC as a pdf)" << std::endl;
     model_pdf = signal_pdf;
   } else {
     std::cerr << "[WARNING] pdf model not defined!!!! Still to be implemented" << std::endl;
