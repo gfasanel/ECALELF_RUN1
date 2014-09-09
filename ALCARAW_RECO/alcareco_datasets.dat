@@ -40,6 +40,7 @@ allRange	/QCD_Pt-40_doubleEMEnriched_TuneZ2star_8TeV-pythia6/Summer12_DR53X-PU_R
 allRange	/DYJetsToLL_TuneZ2_M-50_7TeV-madgraph-tauola/Summer11dr53X-PU_S13_START53_LV3-v1/AODSIM	DYJets-Summer11-START53-ZSkim	caf	group/alca_ecalcalib/ecalelf/alcareco
 allRange	/DYToEE_M-20_CT10_TuneZ2_7TeV-powheg-pythia/Summer11dr53X-PU_S13_START53_LV3-v1/AODSIM	DYToEE_M20_powheg-Summer11-START53-ZSkim	caf	group/alca_ecalcalib/ecalelf/alcareco
 ################### MC geometries and material
+allRange	/DYEE_8TeV_53X_MatBudget/Summer12ExtendedGeo14DR-PU2012ABCD_START53_V29A-v3/GEN-SIM-RECODEBUG	DYToEE-Summer12-START53-ZSkim-runDependent-Ext14DR	caf	group/alca_ecalcalib/alcareco
 allRange	/DYToEE_M-20_CT10_TuneZ2star_v2_8TeV-powheg-pythia6/Summer12_DR53X-ExtFlat10_PU_RD1_START53_V7N-v1/AODSIM	DYToEE_M20_powheg-Summer12-START53-ZSkim-runDependent-ExtFlat10	caf	group/alca_ecalcalib/alcareco
 allRange	/DYToEE_M-20_CT10_TuneZ2star_v2_8TeV-powheg-pythia6/Summer12_DR53X-ExtFlat20_PU_RD1_START53_V7N-v1/AODSIM	DYToEE_M20_powheg-Summer12-START53-ZSkim-runDependent-ExtFlat20	caf	group/alca_ecalcalib/alcareco
 allRange	/DYToEE_M-20_CT10_TuneZ2star_v2_8TeV-powheg-pythia6/Summer12_DR53X-ExtFlat30_PU_RD1_START53_V7N-v1/AODSIM	DYToEE_M20_powheg-Summer12-START53-ZSkim-runDependent-ExtFlat30	caf	group/alca_ecalcalib/alcareco
@@ -98,10 +99,6 @@ allRange	/DYJetsToLL_TuneZ2_M-50_7TeV-madgraph-tauola/Fall11-PU_S6_START42_V14B-
 198022-203742	/DoubleElectron/Run2012C-ZElectron-22Jan2013-v1/RAW-RECO	DoubleElectron-ZSkim-RUN2012C-22Jan-v1	caf	group/alca_ecalcalib/ecalelf/alcareco	INVALID	RUN2012C,RUN2012ABC,RUN2012ABCD
 203777-208686	/DoubleElectron/Run2012D-ZElectron-22Jan2013-v1/RAW-RECO	DoubleElectron-ZSkim-RUN2012D-22Jan-v1	caf	group/alca_ecalcalib/ecalelf/alcareco	INVALID	RUN2012D,RUN2012ABCD
 ###
-190645-193621	/SingleElectron/Run2012A-22Jan2013-v1/AOD	SingleElectron-WSkim-RUN2012A-22Jan-v1	caf	group/alca_ecalcalib/ecalelf/alcareco	INVALID	RUN2012A,RUN2012AB,RUN2012ABC,RUN2012ABCD
-193834-196531	/SingleElectron/Run2012B-22Jan2013-v1/AOD	SingleElectron-WSkim-RUN2012B-22Jan-v1	caf	group/alca_ecalcalib/ecalelf/alcareco	INVALID	RUN2012B,RUN2012AB,RUN2012ABC,RUN2012ABCD
-198022-203742	/SingleElectron/Run2012C-22Jan2013-v1/AOD	SingleElectron-WSkim-RUN2012C-22Jan-v1	caf	group/alca_ecalcalib/ecalelf/alcareco	INVALID	RUN2012C,RUN2012ABC,RUN2012ABCD
-203777-208686	/SingleElectron/Run2012D-22Jan2013-v1/AOD	SingleElectron-WSkim-RUN2012D-22Jan-v1	caf	group/alca_ecalcalib/ecalelf/alcareco	INVALID	RUN2012D,RUN2012ABCD
 ###
 190645-193621	/DoubleElectron/Run2012A-22Jan2013-v1/AOD	DoubleElectron-ZSkimPath-RUN2012A-22Jan-v1	caf	group/alca_ecalcalib/ecalelf/alcareco	VALID	RUN2012A,RUN2012AB,RUN2012ABC,RUN2012ABCD
 193834-196531	/DoubleElectron/Run2012B-22Jan2013-v1/AOD	DoubleElectron-ZSkimPath-RUN2012B-22Jan-v1	caf	group/alca_ecalcalib/ecalelf/alcareco	VALID	RUN2012B,RUN2012AB,RUN2012ABC,RUN2012ABCD

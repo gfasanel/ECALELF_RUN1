@@ -7,7 +7,7 @@ ALCARAW_RECO/scripts/RerecoQuick.sh
 from the directory ALCARAW_RECO
 
 \subsection RERECO_inputFiles Input files
-   1. ALCARAW_RECO/config/reRecoTags/tag_name.py: 
+-# ALCARAW_RECO/config/reRecoTags/tag_name.py: 
       is the file where the GT and the list of tags 
       to be used for the rereco and the ntuple production 
       have to be specified.
@@ -15,9 +15,9 @@ from the directory ALCARAW_RECO
       assigned to all the directories created for the rereco 
       and the ntuples (the crab directory in 
       ALCARAW_RECO/prod_alcarereco 
-      and the directories in eos with the reco files and the ntuples)
-
-   2. alcaraw_datasets.dat is the file with the list of the available alcaraw files
+      and the directories in eos with the reco files and the ntuples).
+      \b More info in \ref TAGFILES
+-# alcaraw_datasets.dat is the file with the list of the available alcaraw files
 
 \subsection RERECO_outputFiles Output files
  1. alcarereco_datasets.dat is the file with the list of all the
@@ -39,19 +39,19 @@ from the directory ALCARAW_RECO
 
 \subsection RERECO_instructions Instructions
 
-1. create the tag_name.py in ALCARAW_RECO/config/reRecoTags directory
+-# create the tag_name.py in ALCARAW_RECO/config/reRecoTags directory
    Se more detailes below, in section "TAG FILE" 
-
-2. commit the file in GITHUB:
+-# check the syntax of the tag_name.py file
+\code
+\endcode
+-# commit the file in GITHUB:
 \code
 git add config/reRecoTags/tag_name.py
 git commit -m "...." config/reRecoTags/tag_name.py
 \endcode
-
-3. Add the period on which the ReReco has to be run in
+-# Add the period on which the ReReco has to be run in
    alcaraw_datasets.dat, if not already defined (e.g. RUN2012AB)
-
-4. Run the script RerecoQuick.sh  
+-# Run the script RerecoQuick.sh  
 \code
    ./scripts/RerecoQuick.sh -p period -t config/reRecoTags/tag_name.py --json=jsonFile.txt --json_name={runMin}-{runMax}_{prompt,rereconame}_{jsonVersion} 
 \endcode
@@ -67,25 +67,6 @@ the command
 <B>
 Not yet tested!!!
 </B>
-
-\subsection lxplus6job Job submission on lxplus6
-Batch nodes at CERN are moving to slc6 and can be accessible only from lxplus6 machines.
-Consider to create the jobs on a lxplus5 machin with the previous command and adding the --createOnly option.
-Then move to an lxplus6 machine and re-execute the command but with the --submitOnly option instead.
-
- - create the jobs on sl5 with option  ./scripts/RerecoQuick.sh .... --createOnly
- - login on sls6
- - cd to the ...CMSSW_5_3_14_patch2/src/Calibration/
- - source initCmsEnv.csh
- - ignore the error messages
- - submit the jobs on sl6 with option ./scripts/RerecoQuick.sh .... --submitOnly
-
-Additional tricks with CERN batch system:
-if for any reason you want to migrate pending jobs from one queue to another you can run the command (bash syntax)
-\code
-for jobid in `bjobs -q cmscaf1nd | cut -d ' ' -f 1`; do bmod -q 1nd $jobid; done
-\endcode
-
 
 
 \subsection rerecoExample Rereco example:
@@ -103,7 +84,7 @@ The files alcarereco_datasets.dat  and ntuple_datasets.dat ae updated when this 
   datasets and check if jobs are exited with status 0 
   If jobs are finished, it merge all the produced ntuples and copy them to the right directory on EOS
 
-6. if all went fine, commit the alcarereco_datasets.dat and ntuple_datasets.dat files
+-# if all went fine, commit the alcarereco_datasets.dat and ntuple_datasets.dat files
 \code
 git pull --no-commit
 \endcode
