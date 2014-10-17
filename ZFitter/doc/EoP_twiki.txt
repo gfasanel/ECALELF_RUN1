@@ -1,0 +1,179 @@
+---++Making Ntuples
+---+++Run locally to test
+
+From Calibration/ALCARAW_RECO:
+
+Find a AOD or AODSIM file here: https://cmsweb.cern.ch/das/
+
+dataset=/QCD_Pt_*_EMEnriched_TuneZ2star_8TeV_pythia6/Summer12_DR53X-PU_RD1_START53_V7N-v1/AODSIM
+
+Click on one dataset, "Files" (it's in gray), "download", and follow the code instruction for download
+
+-> Only Alcareco:
+
+cmsRun python/alcaSkimming.py isCrab=0 type=ALCARECO  doTree=0 maxEvents=300 files=file://myFile.root
+
+It gives you an alcareco.root
+
+-> Only Ntuples:
+
+cmsRun python/alcaSkimming.py isCrab=0 type=ALCARECO  doTree=1 doTreeOnly=1 maxEvents=300 files=file://myFile.root
+
+-> Alca + ntuples:
+
+cmsRun python/alcaSkimming.py isCrab=0 type=ALCARECO  doTree=1 doTreeOnly=0 maxEvents=300 file=file://myFile.root
+
+Use skim=ZSkim in case
+
+---+++ALCARECO production:
+
+From Calibration/ALCARAW_RECO:
+
+Preliminary:
+
+check on https://cmsweb.cern.ch/das/ if the datasets are at T2_CH_CERN (click on "Sites"). If not, you should run the script with --scheduler=remoteGlidein
+
+Preliminary:
+
+modifiy in scripts/prodAlcareco.sh EVENTS_PER_JOB=450000 (for madgraph and sherpa) or 150000 (for powheg)
+
+-> Have a look to launch.sh
+
+-> prepare and submit jobs:
+
+./scripts/prodAlcareco.sh `parseDatasetFile.sh alcareco_datasets.dat | grep DYJetsToLL| grep madgraph` --isMC -s ZSkim --scheduler=remoteGlidein
+
+(you can check the files you are processing typing: parseDatasetFile.sh alcareco_datasets.dat | grep DYJetsToLL| grep madgraph
+
+-> if you just want to create the jobs and then submitting them by hand:
+
+./scripts/prodAlcareco.sh `parseDatasetFile.sh alcareco_datasets.dat | grep DYJetsToLL| grep madgraph` --isMC -s ZSkim --createOnly --scheduler=remoteGlidein
+
+Submit by hand:
+
+ crab -c prod_alcareco/DYToEE_M20_My3_powheg-Summer12-START53-ZSkimPath-runDependent/194533-194533/ -submit 1
+
+(or -submit all)
+
+-> check the job status
+
+./scripts/prodAlcareco.sh `parseDatasetFile.sh alcareco_datasets.dat | grep My3` --check
+
+equivalent to:
+
+crab -c prod_alcareco/DYToEE_M20_My3_powheg-Summer12-START53-ZSkimPath-runDependent/194533-194533/ -status
+
+If some of them fail:
+crab -c prod_alcareco/DYToEE_M20_My3_powheg-Summer12-START53-ZSkimPath-runDependent/194533-194533/ -status -getoutput
+crab -c prod_alcareco/DYToEE_M20_My3_powheg-Summer12-START53-ZSkimPath-runDependent/194533-194533/ -resubmit 102,103,.......
+
+
+
+At the end, your alcareco.root files should be in the directory:
+
+/eos/cms/store/group/alca_ecalcalib/alcareco/Energy/DatasetName/RunRange
+
+example:
+
+eos ls /eos/cms/store/group/alca_ecalcalib/alcareco/8TeV/DYJets-Summer12-START53-ZSkim-runDependent/194533-194533
+
+
+
+
+---+++Ntuple:
+
+Ntuples are produced starting from ALCARECO, ALCARECOSIM or ALCARERECO
+
+
+From Calibration/ALCARAW_RECO:
+
+
+1) From CMSSW ntuples to ECALELF ntuples
+
+jsonName is used to build the subdirectory and keep memory of the used jsonFile.
+
+For DATA: type=ALCARECO, for MC: type=ALCARECOSIM
+
+Example DATA:
+
+./scripts/prodNtuples.sh `parseDatasetFile.sh alcareco_datasets.dat |grep 22Jan | grep DoubleEle | grep ZSkimPath` --type=ALCARECO --json=/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions12/8TeV/Reprocessing/Cert_190456-208686_8TeV_22Jan2013ReReco_Collisions12_JSON.txt --json_name=190456-208686-22Jan_v1
+
+Example MC:
+
+./scripts/prodNtuples.sh `parseDatasetFile.sh alcareco_datasets.dat | grep DYToEE` --type=ALCARECOSIM --json=/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions12/8TeV/Reprocessing/Cert_190456-208686_8TeV_22Jan2013ReReco_Collisions12_JSON.txt --json_name=190456-208686-22Jan_vChi2
+
+
+Sometimes you want to add a new branch in your ntuples: add it in ZNtupleDumper
+
+Maybe you need to know the name of the branch in the CMSSW framework: use lxr CMS, searching the interface of you class, for example
+
+https://cmssdt.cern.ch/SDT/lxr/source/DataFormats/EgammaCandidates/interface/GsfElectron.h#037
+
+---+++Ntuple Documentation
+
+Variables stored in the ntuples:
+
+http://ecalelfs.github.io/ECALELF/da/df9/classZNtupleDumper.html
+
+---++Categorization
+From ZFitter:
+1) If you need to add a specific TCut, in order to define your category, do it in src/ElectronCategory_class.cc
+
+2) Define your category in data/regions/basic_pt.dat , or define your own .dat file
+
+3) Run:
+
+./script/GenRootChain.sh -f data/validation/22Jan2012-runDepMCAll_my.dat --corrEleType=HggRunEtaR9Et --smearEleType=stochastic --EoP=true --addBranch=smearerCat
+
+The default regionsFile will be data/regions/basic_pt.dat; you can change it in the GenRootChain script
+
+This will produce tmp/*_smearerCat_basic_pt_chain.root for data and MC, which has the category index.
+
+If everything worked well, you should be able to do something like:
+
+root -l tmp/s1_smearerCat_basic_pt_chain.root
+
+smearerCat_basic_pt->Draw("smearerCat[1]");
+
+(set to +999, in case of Single Electron dataset)
+
+smearerCat_basic_pt->Draw("smearerCat[0]");
+
+this is the category index of the electron (the index runs from 0 to N-1, when you define N categories)
+
+---++ Fitting and scale factors computation
+From ZFitter:
+
+1) Cleaning and moving the .root files with the index category info
+
+rm tmp/tmpFile*.root
+
+mv tmp/*basic* data/smearerCat/
+
+2) Adding these root files in your config file (_v5 in this case)
+
+3) Run:
+
+./bin/ZFitter.exe -f data/validation/22Jan2012-runDepMCAll_v5.dat --regionsFile=data/regions/basic_pt.dat --smearerFit --EoP=true --invMass_var=invMass_SC --initFile=init_eop.txt> debug.txt
+
+This will produce: 
+
+root -l test/dato/fitres/outProfile-eop-basic_pt-Et_25-trigger-noPF.root test/dato/fitres/histos-eop-basic_pt-Et_25-trigger-noPF.root 
+
+which cointain the likelihood profle and the histos (data, MC and smeared MC). Use TBrowser to view these histos.
+
+Have a look to the outProfile* file and check if the minimum is correctly determined. If not, 
+
+change the initialization parameters in the initFile, starting from the output file:
+
+cp test/dato/fitres/params-eop-basic_pt-Et_25-trigger-noPF.txt init_eop.txt
+
+make your changes in the parameters and run again ZFitter.exe as in 3), with the new initFile
+
+
+
+
+
+
+
+
