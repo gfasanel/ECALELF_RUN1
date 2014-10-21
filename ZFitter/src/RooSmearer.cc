@@ -551,7 +551,7 @@ void RooSmearer::SetHisto(const eop_events_t& cache, TH1F *hist) const{
       event_itr!= cache.end();
       event_itr++){
 #ifdef EopInserting
-  cout<<"Filla l'histo con Eop"<<endl;
+    //  cout<<"Filla l'histo con Eop"<<endl;
 #endif
     hist->Fill( event_itr->EoverP,event_itr->weight);
   }
@@ -858,20 +858,32 @@ double RooSmearer::getCompatibility(bool forceUpdate,bool isEoP) const
   }else{
     //Eop==true
   bool updated=false;
+#ifdef DEBUG
+      std::cout << "[DEBUG] " << "Before loop over EopCategory" << std::endl;
+#endif
   for(std::vector<EopCategory>::iterator cat_itr = myClass->EopCategories.begin();
       cat_itr != myClass->EopCategories.end();
       cat_itr++){
+#ifdef DEBUG
+      std::cout << "[DEBUG] " << "Inside loop over EopCategory" << std::endl;
+#endif
     if(!cat_itr->active) continue;
+#ifdef DEBUG
+      std::cout << "[DEBUG] " << "After cat_itr->active" << std::endl;
+#endif
     if(forceUpdate||isCategoryChanged(*cat_itr,true)){
       updated=true;
 #ifdef DEBUG
-      std::cout << "[DEBUG] " << cat_itr->categoryName1 << " - " << cat_itr->categoryName2 << "\t isupdated" << std::endl;
+      std::cout << "[DEBUG] " << cat_itr->categoryName1 <<  "\t isupdated" << std::endl;
 #endif
       myClass->UpdateCategoryNLL(*cat_itr, cat_itr->nLLtoy); //the new nll has been updated for the category
     }
     compatibility+=cat_itr->nll;
     myClass->lastNLLrms+= (cat_itr->nllRMS*cat_itr->nllRMS);
   }
+#ifdef DEBUG
+      std::cout << "[DEBUG] " << "After loop EopCategory" << std::endl;
+#endif
   if(dataset!=NULL && updated){
     myClass->nllVar.setVal(compatibility);
     myClass->dataset->add(RooArgSet(_paramSet,nllVar));
@@ -1588,9 +1600,13 @@ void RooSmearer::Init(TString commonCut, TString eleID,bool isEoP, Long64_t nEve
     std::cout << "------------------------------ Randomize initial value:" << std::endl;
     _paramSet.writeToStream(std::cout, kFALSE);
   }
-
+  cl.Start();
   // set initial nll values
-  getCompatibility(true);
+  getCompatibility(true,isEoP);
+  cl.Stop();
+  std::cout<<"time for getting compatibility: ";
+  cl.Print();
+  std::cout<<"Likelihood: "<<evaluate()<<std::endl;
   return;
 }
 
@@ -1652,6 +1668,25 @@ void RooSmearer::DumpNLL(void) const{
       std::cout << "[DUMP NLL] " << std::setprecision(10) 
 		<< cat_itr->categoryIndex1 << " " << cat_itr->categoryIndex2 
 		<< "\t" << cat_itr->nll 
+		<< "\t" << cat_itr->mc_events->size() << "\t" << cat_itr->data_events->size() << "\t0" 
+		<< "\t" << cat_itr->hist_mc->Integral() << "\t" << cat_itr->hist_data->Integral()
+		<< std::endl;
+  }
+  for(std::vector<EopCategory>::const_iterator cat_itr = EopCategories.begin();
+      cat_itr != EopCategories.end();
+      cat_itr++){
+    if(!cat_itr->active)
+      std::cout << "[DUMP NLL] " << std::setprecision(10) 
+		<< cat_itr->categoryIndex1 
+		<< "\t\t" << cat_itr->nll 
+		<< "\t" << cat_itr->mc_events->size() << "\t" << cat_itr->data_events->size() 
+		<< "\t1" 
+		<< "\t" << cat_itr->hist_mc->Integral() << "\t" << cat_itr->hist_data->Integral()
+		<< std::endl;
+    else 
+      std::cout << "[DUMP NLL] " << std::setprecision(10) 
+		<< cat_itr->categoryIndex1
+		<< "\t\t" << cat_itr->nll 
 		<< "\t" << cat_itr->mc_events->size() << "\t" << cat_itr->data_events->size() << "\t0" 
 		<< "\t" << cat_itr->hist_mc->Integral() << "\t" << cat_itr->hist_data->Integral()
 		<< std::endl;
