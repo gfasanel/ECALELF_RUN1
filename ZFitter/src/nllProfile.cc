@@ -72,11 +72,14 @@ using namespace RooStats;
 void Make_Histos(TChain *chain, string output, string region,string invMass_var,TString energyBranchName){//chain,.root,barrel/endcap
   //chain can be either data or MC ntuples
 
+  //See src/ZFit_class.cc for activating/de-activating branches
   cout<<"********************"<<endl;
   cout<<"output: tmp/"<<invMass_var+"/"+output+"_"+region<<endl;
 
   cout<<invMass_var<<endl;//test
   cout<<energyBranchName<<endl;//test
+
+  chain->SetBranchStatus("*",0);
 
   //Weight in filling histograms
   double selection;
@@ -138,6 +141,23 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
   TBranch *b_HLTfire;		  
   TBranch *b_recoFlagsEle;               
 
+  chain->SetBranchStatus("eventNumber",1);
+  chain->SetBranchStatus("etaEle", 1);
+  chain->SetBranchStatus("etaSCEle",1);
+  chain->SetBranchStatus("phiEle", 1);
+  chain->SetBranchStatus("pModeGsfEle",1);
+  chain->SetBranchStatus("pAtVtxGsfEle",1);
+  chain->SetBranchStatus(invMass_var.c_str(),1);		
+  chain->SetBranchStatus(energyBranchName,1);
+  chain->SetBranchStatus("PtEle",1);	   	  
+  chain->SetBranchStatus("seedEnergySCEle",1); 		    
+  chain->SetBranchStatus("chargeEle",1);	   		  
+  chain->SetBranchStatus("R9Ele",1);	   	  
+  chain->SetBranchStatus("seedXSCEle",1);      		    
+  chain->SetBranchStatus("seedYSCEle",1);      		    
+  chain->SetBranchStatus("eleID",1);      		    
+  chain->SetBranchStatus("HLTfire",1);      		    
+  chain->SetBranchStatus("recoFlagsEle",1);
 
   chain->SetBranchAddress("eventNumber", &eventNumber,&b_eventNumber);
   chain->SetBranchAddress("etaEle", etaEle,&b_etaEle);
@@ -159,30 +179,37 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
 
   TBranch *b_scaleEle;
   if(chain->GetBranch("scaleEle")!=NULL){
+    chain->SetBranchStatus("scaleEle", 1);
     chain->SetBranchAddress("scaleEle", corrEle_,&b_scaleEle);
   }
   TBranch *b_smearEle;
   if(chain->GetBranch("smearEle")!=NULL){
+    chain->SetBranchStatus("smearEle", 1);
     chain->SetBranchAddress("smearEle", smearEle_,&b_smearEle);
   }
   TBranch *b_puWeight;
   if(chain->GetBranch("puWeight")!=NULL){
+    chain->SetBranchStatus("puWeight", 1);
     chain->SetBranchAddress("puWeight", &weight,&b_puWeight);
   }
   TBranch *b_r9Weight;
   if(chain->GetBranch("r9Weight")!=NULL){
+    chain->SetBranchStatus("r9Weight", 1);
     chain->SetBranchAddress("r9Weight", r9weight,&b_r9Weight);
   }
   TBranch *b_ptWeight;
   if(chain->GetBranch("ptWeight")!=NULL){
+    chain->SetBranchStatus("ptWeight", 1);
     chain->SetBranchAddress("ptWeight", ptweight,&b_ptWeight);
   }
   TBranch *b_mcGenWeight;
   if(chain->GetBranch("mcGenWeight")!=NULL){
+    chain->SetBranchStatus("mcGenWeight", 1);
     chain->SetBranchAddress("mcGenWeight", &mcGenWeight,&b_mcGenWeight);
   }
   TBranch *b_smearerCat;
   if(chain->GetBranch("smearerCat")!=NULL){
+    chain->SetBranchStatus("smearerCat", 1);
     chain->SetBranchAddress("smearerCat", smearerCat,&b_smearerCat);
   }
 
@@ -362,7 +389,9 @@ void Make_Histos(TChain *chain, string output, string region,string invMass_var,
     //And single electron???
     selection=((eleID[0] & 2)==2)*((eleID[1] & 2)==2)*(HLTfire==1)*(recoFlagsEle[0] > 1)*(recoFlagsEle[1] > 1)*(PtEle[0]>20)*(PtEle[1]>20);
     total_weight=1;
-    total_weight*=weight*r9weight[0]*r9weight[1]*ptweight[0]*ptweight[1]*mcGenWeight;//if sherpa-> add mcGenWeight
+    total_weight*=weight*r9weight[0]*r9weight[1]*ptweight[0]*ptweight[1];
+    //*mcGenWeight;//if sherpa-> add mcGenWeight
+
     //cout<<"mcGenWeight "<<mcGenWeight<<endl;
     //weight is the puWeight: for MC is not 1
     //mcGenWeight is -1 for data => 1 for MC
@@ -985,7 +1014,7 @@ void Smooth(TH2F *h, Int_t ntimes, Option_t *option)
    delete [] ebuf;
 }
 
-bool stopFindMin1D(Int_t i, Int_t iLocMin, Double_t chi2, Double_t min, Double_t locmin, float phiMin=2){
+bool stopFindMin1D(Int_t i, Int_t iLocMin, Double_t chi2, Double_t min, Double_t locmin, float phiMin=4){
   if(abs(i-iLocMin)>2 && chi2-min > 300){ std::cout << "stop 1" << std::endl; return true;}
   if(abs(i-iLocMin)>5 && chi2-min > 200){ std::cout << "stop 2" << std::endl; return true;}
 //   if(abs(i-iLocMin)>6 && chi2-locmin > 120){ std::cout << "stop 3" << std::endl; return true;}
@@ -996,7 +1025,8 @@ bool stopFindMin1D(Int_t i, Int_t iLocMin, Double_t chi2, Double_t min, Double_t
 //   if(abs(i-iLocMin)>11 && chi2-locmin > 5){ std::cout << "stop 11" << std::endl; return true;}
 //   if(abs(i-iLocMin)>12 && chi2-locmin > 3){ std::cout << "stop 12" << std::endl; return true;}
 
-  if(abs(i-iLocMin)>3 && chi2-locmin > phiMin*20){ std::cout << "stop 3" << std::endl; return true;}
+  //if(abs(i-iLocMin)>3 && chi2-locmin > phiMin*20){ std::cout << "stop 3" << std::endl; return true;}//original
+  if(abs(i-iLocMin)>3 && chi2-locmin > 1000){ std::cout << "stop 3" << std::endl; return true;}//mio
   if(abs(i-iLocMin)>4 && chi2-locmin > phiMin*10){ std::cout << "stop 4" << std::endl; return true;}
   if(abs(i-iLocMin)>5 && chi2-locmin > phiMin*5){ std::cout << "stop 8" << std::endl; return true;}
   if(abs(i-iLocMin)>6 && chi2-locmin > phiMin*4){ std::cout << "stop 9" << std::endl; return true;}
@@ -1028,10 +1058,11 @@ Int_t FindMin1D(RooRealVar *var, Double_t *X, Int_t N, Int_t iMinStart, Double_t
 
   Double_t NY[PROFILE_NBINS]={0.}; 
   int iStep=1;
+
   for(Int_t i =iMinStart; i <N; i+=iStep){ //loop versus positive side
     var->setVal(X[i]);
     if(var2!=NULL) var2->setVal(X2[i]);
-    chi2=smearer.evaluate(); 
+    chi2=smearer.evaluate();
     Y[i] += chi2;
     NY[i]++;
   
@@ -1041,14 +1072,15 @@ Int_t FindMin1D(RooRealVar *var, Double_t *X, Int_t N, Int_t iMinStart, Double_t
       std::cout << "[FindMin1D] "  << std::setprecision(4) <<  "\t" << var->getVal() << "\t" << var2->getVal() << "\t" << 
       chi2-chi2init << "\t" << locmin-chi2init << "\t" << min-chi2init << std::endl;
     }else{
-      std::cout  << std::setprecision(4) << "[DEBUG] " <<  "\t" << iStep << "\t" << var->getVal() << "\t" << chi2-chi2init << "\t" << locmin-chi2init << "\t" << min-chi2init << "\tchi2= " <<  chi2 << std::endl;
+      //std::cout  << std::setprecision(6) << "[DEBUG in nllProfile::FindMin1D] " <<  "\tiStep: " << iStep << "\tvar: " << var->getVal() << "\tchi2 - chi2init: " << chi2-chi2init << "\tlocmin-chi2init:  " << locmin-chi2init << "\tmin-chi2init: " << min-chi2init << "\tchi2= " <<  chi2 << std::endl;
+      std::cout  << std::setprecision(6) << "[DEBUG in nllProfile::FindMin1D] " <<  "\tpasso i: " << i << "\tvar: " << var->getVal() << "\tchi2: " << chi2 << "\tchi2init: " << chi2init << "\tchi2 - chi2init: " << chi2-chi2init << "\tlocmin-chi2init:  " << locmin-chi2init << std::endl;
     }
-    if(chi2<=locmin){ //local minimum
+    if(chi2<=locmin){ //local minimum at this stage of the procedure
 	iLocMin=i;
 	locmin=chi2;
     }
       
-    if(stopFindMin1D(i,iLocMin, chi2, min, locmin, phiMin)) break;
+    if(stopFindMin1D(i,iLocMin, chi2, min, locmin, phiMin)) { break; cout<<"passo "<<i<<endl; cout<<"iLocMin "<<iLocMin<<endl;}
     //chi2old=chi2;
     if(i==iLocMin && i-iMinStart==3 && Y[iMinStart]==Y[iMinStart+1] && Y[iMinStart]==Y[iMinStart+2] && Y[iMinStart]==Y[iMinStart+3]){
 #ifdef EopInserting
@@ -1120,13 +1152,11 @@ bool MinProfile(RooRealVar *var, RooSmearer& smearer, int iProfile,
   TGraph 	*profil = GetProfile(var, smearer, iProfile, false, false, rho, Emean);
   //TGraphErrors 	 g(profil->GetN(),profil->GetX(), profil->GetY());
 
-
   Double_t 	*X    = profil->GetX();
   Double_t 	*Y    = profil->GetY();
   Int_t 	 N    = profil->GetN();
-
+  double        *Y_my;
   Double_t chi2=Y[0];
-
 
   Int_t iMin_=0; // minimum of the graph
 
@@ -1134,6 +1164,31 @@ bool MinProfile(RooRealVar *var, RooSmearer& smearer, int iProfile,
     Y[i2]=0;
     if(X[iMin_] < v1) iMin_++;
   }
+  //at this point Y is 0 for all X
+
+  //****BIG CHANGE********//
+  double nll=0;
+  cout<<"N "<<N<<endl;
+  vector<double> likelihood;
+  vector<double> index;
+  double MIN;
+  for(Int_t i3 =400; i3 <N; i3+=100){//find minimum
+    var->setVal(X[i3]);
+    //cout<<"var setted"<<endl;
+    nll=smearer.evaluate();
+    //cout<<"nll evaluated: nll "<<nll<<endl;
+  likelihood.push_back(nll);
+  index.push_back(i3);
+
+  }
+  //MIN = *min_element(likelihood.begin(), likelihood.end());
+  //IntIterator i = find(likelihood.begin(), likelihood.end(), MIN);
+  int min_index = std::min_element(likelihood.begin(), likelihood.end()) - likelihood.begin();
+  cout<<"min index is "<<min_index<<endl;
+  cout<<"index is "<<index[min_index];
+
+  iMin_=index[min_index];//This is a big change
+
   iMin_= FindMin1D(var, X, N, iMin_, min, smearer, true, Y);
   if(iMin_<0){ // in case of no sensitivity to the variable it is put has constant and the minimization is interrupted
     cout<<"N "<<N<<endl;
@@ -1358,7 +1413,7 @@ void MinimizationProfile(RooSmearer& smearer, RooArgSet args, long unsigned int 
   smearer.nllMin=1e20;
 
   std::cout << "[INFO] Setting initial evaluation" << std::endl;
-  smearer.evaluate();
+  std::cout<< smearer.evaluate()<<std::endl;
   Double_t 	min_old	    = 9999999999.;
   Double_t 	min	    = 999999999.;
   bool 	updateError = false;
