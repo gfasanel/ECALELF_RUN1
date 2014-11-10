@@ -316,6 +316,7 @@ TTree* addBranch_class::AddBranch_iSM(TChain* originalChain, TString treename, T
 
 // branch with the category index
 TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString treename, bool isEoP, bool isMC){
+  cout<<"In addBranch_class::AddBranch_smearerCat"<<endl;
   #ifdef EopInserting
   cout<<"Inside addBranch_smearerCat method of addBranch_class.cc"<<endl;
   #endif
@@ -342,6 +343,8 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
     originalChain->SetBranchStatus("*",0);
     
     std::vector<TTreeFormula*> catSelectors;
+
+    //In EoP case electron 1 and electron 2 are NOT related at all => 2 separated for
     for(std::vector<TString>::const_iterator region_ele1_itr = _regionList.begin();
 	region_ele1_itr != _regionList.end();
 	region_ele1_itr++){
@@ -359,16 +362,14 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
       
       TString region=*region_ele1_itr;
       region.ReplaceAll(_commonCut,""); //remove the common Cut!
-      TTreeFormula *selector = new TTreeFormula("selector-"+(region), cutter.GetCut(region+oddString, isMC), originalChain);
+      //Just apply cuts on the first
+      //NEED TO BE CHANGED
+      TTreeFormula *selector = new TTreeFormula("selector-"+(region), cutter.GetCut(region+oddString, isMC,1), originalChain);
       catSelectors.push_back(selector);
       //selector->Print();
-#ifdef EopInserting
-      cout<<"Before cutter.GetCut"<<endl;
-#endif
-      std::cout << cutter.GetCut(region+oddString, isMC) << std::endl;
-      //exit(0);
+      std::cout << cutter.GetCut(region+oddString, isMC,1) << std::endl;
+      //std::cout << cutter.GetCut(region+oddString, isMC,1)+"||"+cutter.GetCut(region+oddString, isMC,2) << std::endl;
     }//end of loop on region_ele1_itr
-
 
   Long64_t entries = originalChain->GetEntries();
   originalChain->LoadTree(originalChain->GetEntryNumber(0));
@@ -400,7 +401,7 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
     }
     
     smearerCat[0]=evIndex;
-    smearerCat[1]=999; //so the second category index becomes a flag
+    smearerCat[1]=999; //so the second category index becomes a flag between single and double electron
     newtree->Fill();
     if(jentry%(entries/100)==0) std::cerr << "\b\b\b\b" << std::setw(2) << jentry/(entries/100) << "%]";
   }
@@ -412,6 +413,8 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
   return newtree;
   /*end of if EoP==true*/ 
   }else{ //EoP==false
+    cout<<"You are inside addBranch_class.cc: categorizing under EoP false"<<endl;
+    cout<<"smearerCat[0] is the evIndex, the other one tells you about the swap"<<endl;
   ElectronCategory_class cutter;
   if(originalChain->GetBranch("scaleEle")!=NULL){
     cutter._corrEle=true;
@@ -431,25 +434,22 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
   
   /// \todo disable branches using cutter
   originalChain->SetBranchStatus("*",0);
-  
   std::vector< std::pair<TTreeFormula*, TTreeFormula*> > catSelectors;
   for(std::vector<TString>::const_iterator region_ele1_itr = _regionList.begin();
       region_ele1_itr != _regionList.end();
       region_ele1_itr++){
-
     // \todo activating branches // not efficient in this loop
     std::set<TString> branchNames = cutter.GetBranchNameNtuple(*region_ele1_itr);
+
     for(std::set<TString>::const_iterator itr = branchNames.begin();
 	itr != branchNames.end(); itr++){
       originalChain->SetBranchStatus(*itr, 1);
     }
     if(    cutter._corrEle==true) originalChain->SetBranchStatus("scaleEle", 1);
 
-
     for(std::vector<TString>::const_iterator region_ele2_itr = region_ele1_itr;
 	region_ele2_itr != _regionList.end();
 	region_ele2_itr++){
-      
       if(region_ele2_itr==region_ele1_itr){
 	TString region=*region_ele1_itr;
 	region.ReplaceAll(_commonCut,""); //remove the common Cut!
