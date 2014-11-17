@@ -215,6 +215,7 @@ double rangeWithPoints(TGraphErrors *g, int nPoints, Double_t *xMin, Double_t* x
 
 TF1* IterMinimumFit(TGraphErrors *g, bool isScale, bool isPhi=false)
 {
+  cout<<"inside IterMinimumFit described in macro_fit.C"<<endl;
 #ifdef DEBUG
   g->SaveAs("ciao.root");
 #endif
@@ -260,6 +261,7 @@ TF1* IterMinimumFit(TGraphErrors *g, bool isScale, bool isPhi=false)
   //  double minX=-fun->GetParameter(1) / (2* fun->GetParameter(2));
   // double sigma=(range_max-range_min)/2;
   double sigma=1./sqrt(2* fun->GetParameter(2));
+  cout<<"sigma #1"<<sigma<<endl;
   if(sigma<1e-5 || sigma>1e10 || sigma!=sigma) sigma=1e-4;
   double sigma_plus=sigma;
   double sigma_minus=sigma;
@@ -269,11 +271,16 @@ TF1* IterMinimumFit(TGraphErrors *g, bool isScale, bool isPhi=false)
   double old_chi2=0., chi2=0.;
    
   if(sigma<0.0001) sigma=0.0001;
+  cout<<"At this point sigma is 0.0001"<<endl;
   if(minX<rangeLimMin) minX=rangeLimMin+0.001;
   std::cout << "[INFO] Init ------------------------------" << std::endl
 	    << "        minX: "  << minX << std::endl
 	    << "        sigma: " << sigma << std::endl;
   //  range_max=range_min+0.01;
+  cout<<"Fitting with an asymmetricParabola"<<endl;
+  cout<<"range_min "<<range_min<<endl;
+  cout<<"range_max "<<range_max<<endl;
+  cout<<"sigma is an initialization parameter "<<sigma<<endl;
   TF1* f2 = new TF1("f2",asymmetricParabola,range_min,range_max,4);
   f2->SetParameter(0,0); //TMath::MinElement(g->GetN(),g->GetY()));
   f2->SetParameter(1,minX);
@@ -285,6 +292,7 @@ TF1* IterMinimumFit(TGraphErrors *g, bool isScale, bool isPhi=false)
   f2->SetParLimits(2,0,1e10);
   f2->SetParLimits(3,0,1e10);
   int iter=0;
+  cout<<"Iteration procedure started"<<endl;
   do{
     old_chi2=chi2;
 
@@ -1067,6 +1075,8 @@ void Plot(TCanvas *c, TGraphErrors *g, TF1 *fun, TPaveText *pt, bool isScale, bo
 
 
 void FitProfile2(TString filename, TString energy="8 TeV", TString lumi="", bool doScale=true, bool doResolution=true, bool doPhi=false){
+ 
+  cout<<"inside FitProfile2 described in macro/macro_fit.C"<<endl;
   gStyle->SetOptFit(0);  
   std::ofstream ffout("tmp/out.out");
 
@@ -1183,7 +1193,9 @@ void FitProfile2(TString filename, TString energy="8 TeV", TString lumi="", bool
 
       std::cout << "Fitting iteratively for minumum and error estimation" << std::endl;
       g->SetTitle(region);
+      //check out this IterMinimumFit described in src/nllProfile.cc
       TF1* fun = IterMinimumFit(g, isScale, isPhi);
+      cout<<"After IterMinimumFit: Fit is done by now"<<endl;
       if (!fun)
 	{
 	  std::cout << "HEY FIT HAD BIG PROBLEMS!" << std::endl;
