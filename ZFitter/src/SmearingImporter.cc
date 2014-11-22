@@ -83,6 +83,8 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
 
   TRandom3 gen(0);
   if(!isMC) gen.SetSeed(12345);
+  //For Data seed is 12345, far MC is TRandom3 gen(0)
+  std::cout << "Seed = " << gen.GetSeed() << std::endl;
   TRandom3 excludeGen(12345);
   Long64_t excludedByWeight=0, includedEvents=0;
 
@@ -252,7 +254,6 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
   cout<<"isMC "<<isMC<<endl;
   cout<<"entries "<<entries<<endl;
   for(Long64_t jentry=0; jentry < entries; jentry++){//for=> preparing histos
-    //apocalypse Zee
     //Long64_t entryNumber= chain->GetEntryNumber(jentry);
     //chain->GetEntry(entryNumber);
     chain->GetEntry(jentry);
@@ -280,7 +281,8 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
 	catSelector_itr->first->UpdateFormulaLeaves();
 	if(catSelector_itr->second!=NULL)       catSelector_itr->second->UpdateFormulaLeaves();
       }
-    }//it closes hasSmearerCat==false
+    }//it closes hasSmearerCat==false && 
+
     int evIndex=-1;
     bool _swap=false;
     if(!hasSmearerCat){
@@ -304,18 +306,19 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
       if(jentry<2) std::cout << evIndex << "\t" << _swap << std::endl;
     }
     if(evIndex<0) {continue;} // event in no category
-    //#ifdef EopInserting
-    //cout<<"just before ZeeEvent event"<<endl;
-    //#endif
     ZeeEvent event;
-    //       if(jentry<30){
-    // 	//chain->Show(chain->GetEntryNumber(jentry));
-    // 	std::cout << "[INFO] corrEle[0] = " << corrEle_[0] << std::endl;
-    // 	std::cout << "[INFO] corrEle[1] = " << corrEle_[1] << std::endl;
-    // 	std::cout << "[INFO] smearEle[0] = " << smearEle_[0] << std::endl;
-    // 	std::cout << "[INFO] smearEle[1] = " << smearEle_[1] << std::endl;
-    // 	std::cout << "[INFO] Category = " << evIndex << std::endl;
-    //       }
+    //smearEle is not the one I want to use: I use smearings_ele
+    /*
+    if(jentry<10){
+      //Before smearing
+      cout<<"Before smearing"<<endl;
+      chain->Show(chain->GetEntryNumber(jentry));
+      std::cout << "[INFO] corrEle[0] = " << corrEle_[0] << std::endl;
+      std::cout << "[INFO] corrEle[1] = " << corrEle_[1] << std::endl;
+      std::cout << "[INFO] smearEle[0] = " << smearEle_[0] << std::endl;
+      std::cout << "[INFO] smearEle[1] = " << smearEle_[1] << std::endl;
+      std::cout << "[INFO] Category = " << evIndex << std::endl;
+      }*/
     
     float t1=TMath::Exp(-etaEle[0]);
     float t2=TMath::Exp(-etaEle[1]);
@@ -335,15 +338,21 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
       event.energy_ele1 = energyEle[0] * corrEle_[0] * smearEle_[0];
       event.energy_ele2 = energyEle[1] * corrEle_[1] * smearEle_[1];
     }
-    //event.angle_eta_ele1_ele2=  (1-((1-t1q)*(1-t2q)+4*t1*t2*cos(phiEle[0]-phiEle[1]))/((1+t1q)*(1+t2q)));
+
+    /*if(jentry<10){
+      //After smearing
+      cout<<"After smearing smearEle"<<endl;
+      chain->Show(chain->GetEntryNumber(jentry));
+      std::cout << "[INFO] corrEle[0] = " << corrEle_[0] << std::endl;
+      std::cout << "[INFO] corrEle[1] = " << corrEle_[1] << std::endl;
+      std::cout << "[INFO] smearEle[0] = " << smearEle_[0] << std::endl;
+      std::cout << "[INFO] smearEle[1] = " << smearEle_[1] << std::endl;
+      std::cout << "[INFO] Category = " << evIndex << std::endl;
+      }*/
+
     event.invMass= sqrt(2 * event.energy_ele1 * event.energy_ele2 *
 			(1-((1-t1q)*(1-t2q)+4*t1*t2*cos(phiEle[0]-phiEle[1]))/((1+t1q)*(1+t2q)))
 			);
-    //#ifdef EopInserting
-    //if(isMC){
-    //cout<<"invMass "<<event.invMass<<endl;
-    //}
-    //#endif
 
     if(_isSmearingEt){
       if(_swap){
@@ -355,7 +364,7 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
       }	
     }
     // to calculate the invMass: invMass = sqrt(2 * energy_ele1 * energy_ele2 * angle_eta_ele1_ele2)
-    //if(event.invMass < 70 || event.invMass > 110) continue;
+
     event.weight = 1.;
     if(_usePUweight) event.weight *= weight;
     if(_useR9weight) event.weight *= r9weight[0]*r9weight[1];
@@ -421,13 +430,20 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
 
 #ifdef FIXEDSMEARINGS
     if(isMC){
+      //Shervin says those are the smearing coefficients
       event.smearings_ele1 = new float[NSMEARTOYLIM];
       event.smearings_ele2 = new float[NSMEARTOYLIM];
       for(int i=0; i < NSMEARTOYLIM; i++){
 	event.smearings_ele1[i] = (float) gen.Gaus(0,1);
 	event.smearings_ele2[i] = (float) gen.Gaus(0,1);
+	/*if(i<10){//debug smearings
+	  cout<<"MC smearing (see FIXEDSMEARINGS in SmearingImporter.cc"<<endl;
+	  cout<<i<< " event.smearings_ele1 "<<event.smearings_ele1[i]<<endl;
+	  cout<<i<< " event.smearings_ele2 "<<event.smearings_ele2[i]<<endl;
+	  }*/
+
       }
-    }else{
+    }else{//se dati
       event.smearings_ele1 = new float[1];
       event.smearings_ele2 = new float[1];
       event.smearings_ele1[0] = (float) gen.Gaus(0,1);
@@ -443,7 +459,6 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
   chain->GetEntry(0);
   return;
 
-
 }
 
 
@@ -451,7 +466,7 @@ void SmearingImporter::Import(TTree *chain, regions_cache_t& cache, TString oddS
 void SmearingImporter::Import(TTree *chain, std::vector<eop_events_t>& cache, TString oddString, bool isMC, Long64_t nEvents, bool isToy, bool externToy){
 #ifdef EopInserting
   cout<<"Inside SmearingImporter::Import"<<endl;
-  cout<<"My overloaded version using vector<eop_events"<<endl;
+  cout<<"Overloaded version using vector<eop_events"<<endl;
 #endif
   TRandom3 gen(0);
   if(!isMC) gen.SetSeed(12345);
@@ -459,7 +474,7 @@ void SmearingImporter::Import(TTree *chain, std::vector<eop_events_t>& cache, TS
   Long64_t excludedByWeight=0, includedEvents=0;
 
   //The ntuple structure still stores 2 electron variables, even in Single-Electron dataset 
-  //energyEle[1] will be 0 in the Single Electron Dataset
+  //energyEle[1] will be 0 in the Single Electron Dataset (also chargeEle[1]==0 if no electron exists)
   // for the eop calculation
   Float_t         energyEle[2];
   Float_t         momentumEle[2];
@@ -595,40 +610,41 @@ void SmearingImporter::Import(TTree *chain, std::vector<eop_events_t>& cache, TS
     if(weight>3) continue;
 
 
-    int evIndex=-1;
-    bool _swap=false;
-    if(!hasSmearerCat){
-    }else{
-      evIndex=smearerCat[0];
-      //_swap=smearerCat[1];
-      if(jentry<2) std::cout << evIndex << "\t" << _swap << std::endl;
-    }
-    if(evIndex<0) continue; // event in no category
+    int evIndex;//This is either the first or the second electron index
 
-    EopEvent event;
+    for(int ind=0;ind<2;ind++){//loop over indeces
+
+      if(!hasSmearerCat){
+      }else{
+	evIndex=smearerCat[ind];//cat index of the first electron
+	if(jentry<2) std::cout << evIndex<< std::endl;
+      }
+      if(evIndex<0) continue; // event in no category
+
+      EopEvent event;
     
-    if(isMC && hasSmearEle){//I want to smear the MC and use the smeared MC to fit data
-      smearEle_[0]=gen.Gaus(1,smearEle_[0]);
+      if(isMC && hasSmearEle){//I want to smear the MC and use the smeared MC to fit data
+	smearEle_[ind]=gen.Gaus(1,smearEle_[ind]);
 
-    }
+      }
 
     //------------------------------
     //Defining the members of the EopEvent object
-    event.energy_ele1 = energyEle[0] * corrEle_[0] * smearEle_[0];
-    event.momentum_ele1=momentumEle[0];
+    event.energy_ele1 = energyEle[ind] * corrEle_[ind] * smearEle_[ind];
+    event.momentum_ele1=momentumEle[ind];
     event.EoverP=event.energy_ele1/event.momentum_ele1;
 
 #ifdef Members
-    cout<<"energy "<<energyEle[0]<<endl;
-    cout<<"momentum (branch attivato in SmearingImporter::GetCache) "<<momentumEle[0]<<endl;
+    cout<<"energy "<<energyEle[ind]<<endl;
+    cout<<"momentum (branch attivato in SmearingImporter::GetCache) "<<momentumEle[ind]<<endl;
     cout<<"EoverP"<<event.EoverP<<endl;
 #endif
 
     if(_isSmearingEt){
-	event.energy_ele1/=cosh(etaEle[0]);
+	event.energy_ele1/=cosh(etaEle[ind]);
       }	
 
-    //if(event.invMass < 70 || event.invMass > 110) continue;
+    if(event.EoverP < 0.5 || event.EoverP > 1.5) continue;//Get rid of EoverP bad tails
 
     event.weight = 1.;
     if(_usePUweight) event.weight *= weight;
@@ -639,14 +655,14 @@ void SmearingImporter::Import(TTree *chain, std::vector<eop_events_t>& cache, TS
     if(_useZPtweight && isMC && _pdfWeightIndex>0) event.weight *= zptweight[_pdfWeightIndex];
     if(!isMC && _pdfWeightIndex>0 && pdfWeights!=NULL){
       if(((unsigned int)_pdfWeightIndex) > pdfWeights->size()) continue;
-      event.weight *= ((*pdfWeights)[0]<=0 || (*pdfWeights)[0]!=(*pdfWeights)[0] || (*pdfWeights)[_pdfWeightIndex]!=(*pdfWeights)[_pdfWeightIndex])? 0 : (*pdfWeights)[_pdfWeightIndex]/(*pdfWeights)[0];
-
+      event.weight *= ((*pdfWeights)[ind]<=0 || (*pdfWeights)[ind]!=(*pdfWeights)[ind] || (*pdfWeights)[_pdfWeightIndex]!=(*pdfWeights)[_pdfWeightIndex])? 0 : (*pdfWeights)[_pdfWeightIndex]/(*pdfWeights)[ind];
+      //This pdfWeights was [0]
       
 #ifdef DEBUG      
       if(jentry<10 || event.weight!=event.weight || event.weight>1.3){
 	std::cout << "jentry = " << jentry 
 		  << "\tevent.weight = " << event.weight 
-	  //<< "\t" << (*pdfWeights)[_pdfWeightIndex]/(*pdfWeights)[0] << "\t" << (*pdfWeights)[_pdfWeightIndex] << "\t" << (*pdfWeights)[0] 
+	  //<< "\t" << (*pdfWeights)[_pdfWeightIndex]/(*pdfWeights)[ind] << "\t" << (*pdfWeights)[_pdfWeightIndex] << "\t" << (*pdfWeights)[ind] 
 		  << "\t" << r9weight[0] << " " << r9weight[1] 
 		  << "\t" << ptweight[0] << " " << ptweight[1]
 		  << "\t" << WEAKweight << "\t" << FSRweight
@@ -692,17 +708,24 @@ void SmearingImporter::Import(TTree *chain, std::vector<eop_events_t>& cache, TS
 
 #ifdef FIXEDSMEARINGS
     if(isMC){
+      if(event.smearings_ele1!=NULL){
+	delete event.smearings_ele1;
+      }
       event.smearings_ele1 = new float[NSMEARTOYLIM];
       for(int i=0; i < NSMEARTOYLIM; i++){
 	event.smearings_ele1[i] = (float) gen.Gaus(0,1);
       }
     }else{
+      if(event.smearings_ele1!=NULL){
+	delete event.smearings_ele1;
+      }
       event.smearings_ele1 = new float[1];
-      event.smearings_ele1[0] = (float) gen.Gaus(0,1);
+      event.smearings_ele1[ind] = (float) gen.Gaus(0,1);
     }	
 #endif
     includedEvents++;
     cache.at(evIndex).push_back(event);
+    }
   }
 
   std::cout << "[INFO] Importing events: " << includedEvents << "; events excluded by weight: " << excludedByWeight << std::endl;

@@ -316,24 +316,21 @@ TTree* addBranch_class::AddBranch_iSM(TChain* originalChain, TString treename, T
 
 // branch with the category index
 TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString treename, bool isEoP, bool isMC){
-  cout<<"In addBranch_class::AddBranch_smearerCat"<<endl;
-  #ifdef EopInserting
   cout<<"Inside addBranch_smearerCat method of addBranch_class.cc"<<endl;
-  #endif
   
   if(isEoP==true){
     ElectronCategory_class cutter;
     if(originalChain->GetBranch("scaleEle")!=NULL){
       cutter._corrEle=true;
       std::cout << "[INFO] Activating scaleEle for smearerCat" << std::endl;
-      
     }
     TString oddString="";
     
     //setting the new tree
     TTree *newtree = new TTree(treename, treename);
-    Int_t  smearerCat[2];//the first one is the real index, the second is a flag
-    Char_t cat1[10];// a cosa serve?
+    Int_t  smearerCat[2];//the first one is the category index of the first, the second goes the same
+    Int_t chargeEle[2];
+    Char_t cat1[10];//
     sprintf(cat1,"XX");
     newtree->Branch("smearerCat", smearerCat, "smearerCat[2]/I");
     newtree->Branch("catName", cat1, "catName/C");
@@ -341,17 +338,18 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
     
     /// \todo disable branches using cutter
     originalChain->SetBranchStatus("*",0);
+    originalChain->SetBranchStatus("chargeEle",1);//because sometimes the second electron does not exit
+    //originalChain->GetBranch("chargeEle");
+    originalChain->SetBranchAddress("chargeEle",chargeEle);
+
     
     std::vector<TTreeFormula*> catSelectors;
+    std::vector<TTreeFormula*> catSelectors2;
 
     //In EoP case electron 1 and electron 2 are NOT related at all => 2 separated for
     for(std::vector<TString>::const_iterator region_ele1_itr = _regionList.begin();
 	region_ele1_itr != _regionList.end();
 	region_ele1_itr++){
-#ifdef EopInserting
-      cout<<"Inside iterator over categories"<<endl;
-#endif
-      
       //cutter is an ElectronCategory_class object
       std::set<TString> branchNames = cutter.GetBranchNameNtuple(*region_ele1_itr);
       for(std::set<TString>::const_iterator itr = branchNames.begin();
@@ -363,13 +361,32 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
       TString region=*region_ele1_itr;
       region.ReplaceAll(_commonCut,""); //remove the common Cut!
       //Just apply cuts on the first
-      //NEED TO BE CHANGED
       TTreeFormula *selector = new TTreeFormula("selector-"+(region), cutter.GetCut(region+oddString, isMC,1), originalChain);
       catSelectors.push_back(selector);
       //selector->Print();
       std::cout << cutter.GetCut(region+oddString, isMC,1) << std::endl;
-      //std::cout << cutter.GetCut(region+oddString, isMC,1)+"||"+cutter.GetCut(region+oddString, isMC,2) << std::endl;
     }//end of loop on region_ele1_itr
+
+    //for EoP the two electrons are not related: 2 independent for
+    for(std::vector<TString>::const_iterator region_ele2_itr = _regionList.begin();
+	region_ele2_itr != _regionList.end();
+	region_ele2_itr++){      
+      cout<<"inside iterator 2"<<endl;
+      std::set<TString> branchNames = cutter.GetBranchNameNtuple(*region_ele2_itr);
+      for(std::set<TString>::const_iterator itr = branchNames.begin();
+	itr != branchNames.end(); itr++){
+	originalChain->SetBranchStatus(*itr, 1);
+      }
+      if(    cutter._corrEle==true) originalChain->SetBranchStatus("scaleEle", 1);
+      
+      TString region=*region_ele2_itr;
+      region.ReplaceAll(_commonCut,""); //remove the common Cut!
+      //Just apply cuts on the second
+      TTreeFormula *selector = new TTreeFormula("selector-"+(region), cutter.GetCut(region+oddString, isMC,2), originalChain);
+      catSelectors2.push_back(selector);
+      //selector->Print();
+      std::cout << cutter.GetCut(region+oddString, isMC,2) << std::endl;
+    }//end of loop on region_ele2_itr
 
   Long64_t entries = originalChain->GetEntries();
   originalChain->LoadTree(originalChain->GetEntryNumber(0));
@@ -388,10 +405,18 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
 	  catSelector_itr++){
 	(*catSelector_itr)->UpdateFormulaLeaves();//(*catSelector_itr) takes the content of the pointer
       }
+      for(std::vector<TTreeFormula*>::const_iterator catSelector2_itr = catSelectors2.begin();
+	  catSelector2_itr != catSelectors2.end();
+	  catSelector2_itr++){
+	(*catSelector2_itr)->UpdateFormulaLeaves();//(*catSelector2_itr) takes the content of the pointer
+      }
     }
+
     //Categorization
-    //evIndex specifies the category index
+    //evIndex 1 or 2 specifies the category index
     int evIndex=-1;
+    int evIndex2=-1;
+
     for(std::vector<TTreeFormula*>::const_iterator catSelector_itr = catSelectors.begin();
 	catSelector_itr != catSelectors.end() && evIndex<0;
 	catSelector_itr++){
@@ -400,8 +425,20 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
       evIndex=catSelector_itr-catSelectors.begin();
     }
     
+    for(std::vector<TTreeFormula*>::const_iterator catSelector2_itr = catSelectors2.begin();
+	catSelector2_itr != catSelectors2.end() && evIndex2<0;
+	catSelector2_itr++){
+      TTreeFormula *sel2 = *catSelector2_itr;
+      if(chargeEle[1]==0){
+	evIndex2=-1;//If the second electron doesn't exit => evIndex2=-1
+      }else{
+	if(sel2->EvalInstance()==false) continue;
+	evIndex2=catSelector2_itr-catSelectors2.begin();
+      }
+    }
+    
     smearerCat[0]=evIndex;
-    smearerCat[1]=999; //so the second category index becomes a flag between single and double electron
+    smearerCat[1]=evIndex2;
     newtree->Fill();
     if(jentry%(entries/100)==0) std::cerr << "\b\b\b\b" << std::setw(2) << jentry/(entries/100) << "%]";
   }
@@ -412,6 +449,7 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
   originalChain->ResetBranchAddresses();
   return newtree;
   /*end of if EoP==true*/ 
+
   }else{ //EoP==false
     cout<<"You are inside addBranch_class.cc: categorizing under EoP false"<<endl;
     cout<<"smearerCat[0] is the evIndex, the other one tells you about the swap"<<endl;
