@@ -8,6 +8,7 @@
 #include <TSystem.h>
 #include <TIterator.h>
 #define EopInserting
+//#define HIST
 
 RooSmearer::~RooSmearer(void){
   
@@ -97,7 +98,8 @@ void RooSmearer::SetCache(Long64_t nEvents, bool cacheToy, bool externToy, bool 
       mc_events_cache = importer.GetCache(_signal_chain, true, false, nEvents);
     }
   }
-  /*isEoP false*/}else{
+  /*isEoP false*/
+  }else{
     //isEoP true
   if(data_eop_events_cache.empty()){
     //Memo:
@@ -283,10 +285,8 @@ void RooSmearer::InitCategories(bool mcToy, bool isEoP){
     cout<<"Inside RooSmearer::InitCategories"<<endl;
 #endif
   int index=0;
-  //reserve??
-  EopCategories.reserve((int)(importer._regionList.size()));//(importer._regionList.size()+1)/2 +1));
-  //cosa fa???? Tutte sto reserve??
-  //cosa fa?
+  EopCategories.reserve((int)(importer._regionList.size()));//
+
   for(std::vector<TString>::const_iterator region_ele1_itr = importer._regionList.begin();
       region_ele1_itr != importer._regionList.end();
       region_ele1_itr++){
@@ -604,6 +604,7 @@ void RooSmearer::SetSmearedHisto(const zee_events_t& cache,
     //#ifdef FIXEDSMEARINGS
     smearedEnergy(smearEne1, nSmearToy, event_itr->energy_ele1, scale1, alpha1, constant1, event_itr->smearings_ele1);
     smearedEnergy(smearEne2, nSmearToy, event_itr->energy_ele2, scale2, alpha2, constant2, event_itr->smearings_ele2);
+    
     //#else
     //	// random gen time is consuming!!! test different _nSmearToy to verify
     //    smearedEnergy(smearEne1, nSmearToy, event_itr->energy_ele1, scale1, alpha1, constant1,NULL);
@@ -615,6 +616,7 @@ void RooSmearer::SetSmearedHisto(const zee_events_t& cache,
     for(unsigned int iSmearToy=0; iSmearToy < nSmearToy; iSmearToy++){
       hist->Fill(event_itr->invMass * sqrt(smearEne1[iSmearToy] * smearEne2[iSmearToy]),
 		 event_itr->weight);
+      //cout<<"iSmearToy "<<iSmearToy<<" smearEne1 "<<smearEne1[iSmearToy]<<" smearEne2 "<<smearEne2[iSmearToy];
     }
   }
   hist->Scale(1./nSmearToy);
@@ -645,49 +647,54 @@ void RooSmearer::SetSmearedHisto(const eop_events_t& cache,
   float constant1 = pars1.getRealValue("constTerm_"+categoryName1, 0., kTRUE);
   float alpha1 = pars1.getRealValue("alpha_"+categoryName1, 0., kTRUE);
 
-  //float scale2 = pars2.getRealValue("scale_"+categoryName2, 0., kTRUE);
-  //float constant2 = pars2.getRealValue("constTerm_"+categoryName2, 0., kTRUE);
-  //float alpha2 = pars2.getRealValue("alpha_"+categoryName2, 0., kTRUE);
 
 #ifdef DEBUG
   pars1.writeToStream(std::cout, kFALSE);
   std::cout << "--" << std::endl;
-  pars2.writeToStream(std::cout, kFALSE);
-  //std::cout << "---" << std::endl;
-  //_paramSet.writeToStream(std::cout, kFALSE);
 #endif
-//   if(nSmearToy>NSMEARTOYLIM){
-//     std::cerr << "[ERROR] nSmearToy = " << nSmearToy << std::endl;
-//     exit(1);
-//   }
+
 
   //double smearEne1[NSMEARTOYLIM], smearEne2[NSMEARTOYLIM]; // _nSmearToy<100
-  double smearEne1[1000];//, smearEne2[1000]; // _nSmearToy<100
+  double smearEne1[1000];//
   if(cache.begin()->smearings_ele1==NULL){
     std::cerr<< "[ERROR] No smearings" << std::endl;
     exit(1);
   }
+
+  //ofstream outfile;
+  //outfile.open("tmp/Smearing_afterFullProcedure.txt",ios::trunc);
+  //cout<<"scale "<<scale1<<endl;
+  //cout<<"constant "<<constant1<<endl;
+  //cout<<"alpha "<<alpha1<<endl;
+
   for(eop_events_t::const_iterator event_itr = cache.begin(); 
 	  event_itr!= cache.end();
 	  event_itr++){
 
-    //#ifdef FIXEDSMEARINGS
+
     smearedEnergy(smearEne1, nSmearToy, event_itr->energy_ele1, scale1, alpha1, constant1, event_itr->smearings_ele1);
-    //smearedEnergy(smearEne2, nSmearToy, event_itr->energy_ele2, scale2, alpha2, constant2, event_itr->smearings_ele2);
 
     //#else
     //	// random gen time is consuming!!! test different _nSmearToy to verify
     //    smearedEnergy(smearEne1, nSmearToy, event_itr->energy_ele1, scale1, alpha1, constant1,NULL);
-    //    smearedEnergy(smearEne2, nSmearToy, event_itr->energy_ele2, scale2, alpha2, constant2,NULL);
     //#endif
 //     if(event_itr==cache.begin()){
 //       std::cout << "fixedSmearings: " << event_itr->smearings_ele1[0] << "\t"  << scale1 << "\t" << alpha1 << "\t" << event_itr->energy_ele1 << "\t" << constant1 << "\t" << smearEne1[0] << std::endl;
 //     }
     for(unsigned int iSmearToy=0; iSmearToy < nSmearToy; iSmearToy++){
-      hist->Fill(event_itr->EoverP *smearEne1[iSmearToy], //cosa vuoi fare ???
+      cout<<"iSmearToy "<<iSmearToy<<endl;
+#ifdef HIST
+      cout<<"Inside SetSmearedHisto overloaded for EoP"<<endl;
+      cout<<event_itr->EoverP *smearEne1[iSmearToy]<<endl;
+      cout<<"EoP is "<<event_itr->EoverP<<endl;
+      cout<<iSmearToy<<" smearEne1[iSmearToy] "<<smearEne1[iSmearToy]<<endl;
+#endif
+      //outfile <<smearEne1[iSmearToy]<<endl;   
+      hist->Fill(event_itr->EoverP *smearEne1[iSmearToy], 
 		 event_itr->weight);
     }
   }
+  //outfile.close();
   hist->Scale(1./nSmearToy);
 //   if(hist->GetEntries()<hist->Integral()){
 //     hist->Print();
@@ -923,7 +930,7 @@ Double_t RooSmearer::evaluate() const
   //double comp_mean = getCompatibility();
 
   double isEoP=GetEoP();
-  cout<<"isEoP Inside Evaluate "<<isEoP<<endl;
+  //cout<<"isEoP Inside Evaluate "<<isEoP<<endl;
   double comp_mean = getCompatibility(false,isEoP);
 
 #ifdef CPU_DEBUG
@@ -1602,7 +1609,7 @@ void RooSmearer::Init(TString commonCut, TString eleID,bool isEoP, Long64_t nEve
   }
   cl.Start();
   // set initial nll values
-  getCompatibility(true,isEoP);
+  getCompatibility(true,isEoP);//Fa il calcolo iniziale della likelihood punto di partenza per la minimizzazione
   cl.Stop();
   std::cout<<"time for getting compatibility: ";
   cl.Print();
