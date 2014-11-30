@@ -682,7 +682,6 @@ void RooSmearer::SetSmearedHisto(const eop_events_t& cache,
 //       std::cout << "fixedSmearings: " << event_itr->smearings_ele1[0] << "\t"  << scale1 << "\t" << alpha1 << "\t" << event_itr->energy_ele1 << "\t" << constant1 << "\t" << smearEne1[0] << std::endl;
 //     }
     for(unsigned int iSmearToy=0; iSmearToy < nSmearToy; iSmearToy++){
-      cout<<"iSmearToy "<<iSmearToy<<endl;
 #ifdef HIST
       cout<<"Inside SetSmearedHisto overloaded for EoP"<<endl;
       cout<<event_itr->EoverP *smearEne1[iSmearToy]<<endl;
@@ -1577,6 +1576,7 @@ void RooSmearer::Init(TString commonCut, TString eleID,bool isEoP, Long64_t nEve
 #ifdef EopInserting
   cout<<"Inside RooSmearer::Init"<<endl;
   cout<<"isEoP"<<isEoP<<endl;
+  cout<<"commonCut are "<<commonCut<<endl;
 #endif
   if(mcToy) _isDataSmeared=!externToy; //mcToy;
   if(initFile.Sizeof()>1){
@@ -1588,7 +1588,7 @@ void RooSmearer::Init(TString commonCut, TString eleID,bool isEoP, Long64_t nEve
     _paramSet.writeToStream(std::cout, kFALSE);
   }
 #ifdef EopInserting
-  cout<<"Inside RooSmearer::Init => Setting Common Cut, EleID, Cache, InitCategories"<<endl;
+  cout<<"Inside RooSmearer::Init => Setting Common Cut, SetEleID, SetCache (which calls GetCache, which calls Import), InitCategories"<<endl;
 #endif
   SetCommonCut(commonCut); SetEleID(eleID);
   SetCache(nEvents, mcToy, externToy,isEoP); InitCategories(mcToy, isEoP);

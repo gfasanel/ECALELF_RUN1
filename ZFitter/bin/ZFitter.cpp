@@ -280,7 +280,7 @@ int main(int argc, char **argv) {
   double smearingCBAlpha=1, smearingCBPower=5;
   std::string invMass_var;
   float invMass_min=0, invMass_max=0, invMass_binWidth=0.250;
-  float EoP_min=0, EoP_max=3, EoP_binWidth=0.05;
+  float EoP_min=0.5, EoP_max=1.5, EoP_binWidth=0.05;
   int fit_type_value=1;
   int signal_type_value=0;
   unsigned long long int nToys = 0;
@@ -341,7 +341,7 @@ int main(int argc, char **argv) {
     ("doHistos","create histos of meaningful variables for data and MCs")
     //
     ("selection", po::value<string>(&selection)->default_value("loose"),"")
-    ("commonCut", po::value<string>(&commonCut)->default_value("Et_25-trigger-noPF"),"")
+    ("commonCut", po::value<string>(&commonCut)->default_value("Et_25-trigger-noPF-eleID_loose"),"")
     ("invMass_var", po::value<string>(&invMass_var)->default_value("invMass_SC_regrCorr_ele"),"")
     ("invMass_min", po::value<float>(&invMass_min)->default_value(65.),"")
     ("invMass_max", po::value<float>(&invMass_max)->default_value(115.),"")
@@ -1152,7 +1152,7 @@ int main(int argc, char **argv) {
       //Make_Histos(data,"histograms_data","endcap_goodR9",invMass_var,energyBranchName); 
       //Make_Histos(data,"histograms_data","barrel_badR9",invMass_var,energyBranchName);
       //Make_Histos(data,"histograms_data","endcap_badR9",invMass_var,energyBranchName); 
-      //Make_Histos(data,"histograms_data","barrel",invMass_var,energyBranchName);
+      Make_Histos(data,"histograms_data","barrel",invMass_var,energyBranchName);
       //Make_Histos(data,"histograms_data","endcap",invMass_var,energyBranchName); 
       //data->SaveAs("tmp/my_data.root");//non associa bene i friend
     }
@@ -1163,13 +1163,14 @@ int main(int argc, char **argv) {
       //Make_Histos(mc,"histograms_"+MC,"barrel_badR9",invMass_var,energyBranchName); 
       //Make_Histos(mc,"histograms_"+MC,"endcap_badR9",invMass_var,energyBranchName); 
       Make_Histos(mc,"histograms_"+MC,"barrel",invMass_var,energyBranchName); 
-      Make_Histos(mc,"histograms_"+MC,"endcap",invMass_var,energyBranchName); 
+      //Make_Histos(mc,"histograms_"+MC,"endcap",invMass_var,energyBranchName); 
     }
     exit(0);    
     //just do the histos and exit, do not go further on
   }
 
   //=====================================================================//
+
 
   //Fit and scale factors computation
   if(isEoP==false){//big loop to handle invariant mass fit
@@ -1398,14 +1399,16 @@ int main(int argc, char **argv) {
   globalClock.Stop();
   std::cout << "[INFO] Total elapsed time: "; globalClock.Print(); 
   return 0;
-  /*it closes EoP==false*/}else{  //EoP==true
-
-    smearer.SetEoP(true);
+  /*it closes EoP==false*/
+  }else{  
+    //EoP==true
     //big loop to handle EoP fit
+    smearer.SetEoP(true);
     cout<<"GetEoP "<<smearer.GetEoP()<<endl;
   if(vm.count("smearerFit")){
     //smearer is an object of class RooSmearer (SetHistBinning defined in RooSmearer.hh)
-	smearer.SetHistBinning(0,3,EoP_binWidth); // to do before Init
+    smearer.SetHistBinning(0.5,1.5,EoP_binWidth, true); // to do before Init
+	//Init must be handle in a different way for Mee and EoP
 	if(vm.count("runToy")){
 	  smearer.SetPuWeight(false);
 	  smearer.SetToyScale(1, constTermToy);
@@ -1419,7 +1422,7 @@ int main(int argc, char **argv) {
 	    args.readFromFile(initFileName.c_str());
 	  }
 	  args.writeToStream(std::cout, kFALSE);
-	  smearer.Init(commonCut.c_str(), eleID,isEoP);
+	  smearer.Init(commonCut.c_str(), eleID,isEoP,nEventsPerToy);
 	}
 	myClock.Start();
 	smearer.evaluate();
@@ -1467,14 +1470,14 @@ int main(int argc, char **argv) {
 	myClock.Stop();
 	myClock.Print();
 	if(!vm.count("profileOnly") && !vm.count("plotOnly")){
-	  args.writeToFile(outDirFitResData+"/params-eop-"+r+"-"+TString(commonCut.c_str())+".txt");
-	  smearer._markov.SaveAs((outDirFitResData+"/markov-eop-"+r+"-"+TString(commonCut.c_str())+".root"));
+	  args.writeToFile(outDirFitResData+"/params-eop-"+r+/*"-"+TString(commonCut.c_str())+*/".txt");
+	  smearer._markov.SaveAs((outDirFitResData+"/markov-eop-"+r+/*"-"+TString(commonCut.c_str())+*/".root"));
 	}
 
 	//save the smeared histograms
 
 	if(vm.count("plotOnly") || !vm.count("profileOnly")){
-	  TFile *f = new TFile(outDirFitResData+"/histos-eop-"+r+"-"+TString(commonCut.c_str())+".root", "recreate");
+	  TFile *f = new TFile(outDirFitResData+"/histos-eop-"+r+/*"-"+TString(commonCut.c_str())+*/".root", "recreate");
 	  f->Print();
 	  f->cd();
 	  for(std::vector<EopCategory>::iterator itr= smearer.EopCategories.begin();
@@ -1499,14 +1502,13 @@ int main(int argc, char **argv) {
 	  //create profiles
 	  TString outFile=outDirFitResData.c_str();
 	  outFile+="/outProfile-eop-";
-	  outFile+=r+"-"+TString(commonCut.c_str())+".root";
+	  outFile+=r+/*"-"+TString(commonCut.c_str())+*/".root";
 	  TFile *fOutProfile = new TFile(outFile,"recreate");
 	  cout<<"args.getSize() "<<args.getSize()<<endl;
 	  for (int ivar=0;ivar<args.getSize();++ivar)
 	    {
 	      RooArgList argList(args);
 	      RooRealVar* var=(RooRealVar*)(argList.at(ivar));
-	      cout<<"var1 (ma perche sono tutte costanti?"<<var->GetName()<<endl;
 	      if (var->isConstant())
 		continue;
 

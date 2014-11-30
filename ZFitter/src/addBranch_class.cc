@@ -360,11 +360,13 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
       
       TString region=*region_ele1_itr;
       region.ReplaceAll(_commonCut,""); //remove the common Cut!
+      cout<<"Be careful: in EoP case you must define category with all the cuts (no common Cuts applied) "<<endl;
       //Just apply cuts on the first
       TTreeFormula *selector = new TTreeFormula("selector-"+(region), cutter.GetCut(region+oddString, isMC,1), originalChain);
       catSelectors.push_back(selector);
-      //selector->Print();
       std::cout << cutter.GetCut(region+oddString, isMC,1) << std::endl;
+      //std::cout<<"In catSelectors "<<std::endl;
+      //selector->Print();
     }//end of loop on region_ele1_itr
 
     //for EoP the two electrons are not related: 2 independent for
@@ -398,6 +400,7 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
 
   for(Long64_t jentry=0; jentry < entries; jentry++){
     originalChain->GetEntry(jentry);
+
     if (originalChain->GetTreeNumber() != treenumber) {
       treenumber = originalChain->GetTreeNumber();
       for(std::vector<TTreeFormula*>::const_iterator catSelector_itr = catSelectors.begin();
@@ -429,8 +432,8 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
 	catSelector2_itr != catSelectors2.end() && evIndex2<0;
 	catSelector2_itr++){
       TTreeFormula *sel2 = *catSelector2_itr;
-      if(chargeEle[1]==0){
-	evIndex2=-1;//If the second electron doesn't exit => evIndex2=-1
+      if(chargeEle[1]==0||chargeEle[1]==-100){//0-> no electron stored; -100-> only supercluster but no track
+	evIndex2=-2;//If the second electron doesn't exit => evIndex2=-2
       }else{
 	if(sel2->EvalInstance()==false) continue;
 	evIndex2=catSelector2_itr-catSelectors2.begin();
@@ -490,7 +493,7 @@ TTree* addBranch_class::AddBranch_smearerCat(TChain* originalChain, TString tree
 	region_ele2_itr++){
       if(region_ele2_itr==region_ele1_itr){
 	TString region=*region_ele1_itr;
-	region.ReplaceAll(_commonCut,""); //remove the common Cut!
+	region.ReplaceAll(_commonCut,""); //remove the common Cut!=> because you want to categorize all the events, then apply your skim (_chain->GetEntryList() in SmearingImporter)
 	TTreeFormula *selector = new TTreeFormula("selector-"+(region), cutter.GetCut(region+oddString, isMC), originalChain);
 	catSelectors.push_back(std::pair<TTreeFormula*, TTreeFormula*>(selector,NULL));
 	//selector->Print();
